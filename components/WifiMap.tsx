@@ -1,77 +1,185 @@
-import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@/hooks/useTheme";
+import { router } from "expo-router";
 import { useWifi } from "@/context/WifiContext";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/hooks/useTheme";
+
+const KALUGA_CENTER: [number, number] = [54.5141, 36.2773];
+
+const CATEGORY_LABEL: Record<string, string> = {
+  cafe: "Кафе",
+  restaurant: "Ресторан",
+  bar: "Бар",
+  hotel: "Отель",
+  library: "Библиотека",
+  gym: "Спортзал",
+  mall: "ТЦ",
+  other: "Другое",
+};
+
+const SPEED_LABEL: Record<string, string> = {
+  slow: "Медленный",
+  moderate: "Средний",
+  fast: "Быстрый",
+  ultra_fast: "Очень быстрый",
+};
 
 export default function WifiMap() {
-  const { theme } = useTheme();
+  const mapDivRef = useRef<HTMLDivElement | null>(null);
+  const leafletRef = useRef<any>(null);
   const { spots, settings } = useWifi();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const topInset = 67;
+
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const filteredSpots = spots.filter((s) => {
-    if (settings.verifiedOnly && !s.verified && s.upvotes < 5) return false;
+    if (settings.verifiedOnly && !s.verified) return false;
     return true;
   });
 
+  useEffect(() => {
+    (window as any).__wifiNavigate = (id: string) => {
+      router.push(`/spot/${id}` as any);
+    };
+    return () => {
+      delete (window as any).__wifiNavigate;
+    };
+  }, []);
+
+  useEffect(() => {
+    const container = mapDivRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+
+    import("leaflet").then((mod) => {
+      if (cancelled) return;
+
+      const L = (mod as any).default ?? mod;
+
+      if (leafletRef.current) {
+        leafletRef.current.remove();
+        leafletRef.current = null;
+      }
+
+      const tileUrl = isDark
+        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+      const attribution = isDark
+        ? '© <a href="https://carto.com/">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        : '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+      const map = L.map(container, {
+        center: KALUGA_CENTER,
+        zoom: 14,
+        zoomControl: false,
+      });
+
+      L.tileLayer(tileUrl, {
+        attribution,
+        maxZoom: 19,
+        subdomains: "abcd",
+      }).addTo(map);
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      filteredSpots.forEach((spot) => {
+        const color = spot.isOutdated
+          ? "#F59E0B"
+          : spot.verified
+            ? "#00C48C"
+            : "#0065FF";
+
+        const borderColor = spot.isOutdated
+          ? "#D97706"
+          : spot.verified
+            ? "#059669"
+            : "#0052CC";
+
+        const passHtml = spot.password
+          ? `<div style="display:flex;align-items:center;gap:6px;background:#f3f4f6;border-radius:8px;padding:5px 8px;margin-top:4px">
+               <span style="font-size:13px">🔑</span>
+               <code style="font-size:13px;font-weight:600;color:#111;letter-spacing:0.5px">${spot.password}</code>
+             </div>`
+          : `<div style="color:#059669;font-size:12px;font-weight:600;margin-top:4px">🔓 Открытая сеть</div>`;
+
+        const statusBadge = spot.isOutdated
+          ? `<span style="background:#FEF3C7;color:#92400E;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">⚠️ Устарело</span>`
+          : spot.verified
+            ? `<span style="background:#D1FAE5;color:#065F46;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">✅ Проверено</span>`
+            : `<span style="background:#DBEAFE;color:#1E40AF;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">🔄 Не проверено</span>`;
+
+        const popupHtml = `
+          <div style="font-family:-apple-system,system-ui,sans-serif">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:700;font-size:14px;color:#111;flex:1;margin-right:8px;line-height:1.3">${spot.name}</div>
+              ${statusBadge}
+            </div>
+            <div style="color:#6B7280;font-size:12px;margin-bottom:8px">📍 ${spot.address}</div>
+            <div style="background:#EFF6FF;border-radius:8px;padding:6px 10px;margin-bottom:4px">
+              <div style="font-size:10px;color:#6B7280;margin-bottom:2px">СЕТЬ</div>
+              <div style="font-size:14px;font-weight:700;color:#1D4ED8">${spot.ssid}</div>
+            </div>
+            ${passHtml}
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div style="font-size:11px;color:#9CA3AF">${CATEGORY_LABEL[spot.category] || "Другое"} · ${SPEED_LABEL[spot.speed] || spot.speed}</div>
+              <div style="font-size:11px;color:#9CA3AF">👍${spot.upvotes} 👎${spot.downvotes}</div>
+            </div>
+            <button class="wifi-spot-btn" onclick="window.__wifiNavigate('${spot.id}')">
+              Подробнее →
+            </button>
+          </div>`;
+
+        const marker = L.circleMarker([spot.lat, spot.lng], {
+          radius: 11,
+          fillColor: color,
+          color: borderColor,
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.92,
+        }).addTo(map);
+
+        marker.bindPopup(popupHtml, {
+          className: "wifi-popup",
+          maxWidth: 260,
+          offset: [0, -6],
+        });
+
+        marker.on("mouseover", function () {
+          this.setStyle({ radius: 14, weight: 3 });
+        });
+        marker.on("mouseout", function () {
+          this.setStyle({ radius: 11, weight: 2 });
+        });
+      });
+
+      leafletRef.current = map;
+
+      setTimeout(() => {
+        if (!cancelled && leafletRef.current) {
+          leafletRef.current.invalidateSize();
+        }
+      }, 100);
+    });
+
+    return () => {
+      cancelled = true;
+      if (leafletRef.current) {
+        leafletRef.current.remove();
+        leafletRef.current = null;
+      }
+    };
+  }, [filteredSpots, isDark]);
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>
-      <View style={styles.iconWrap}>
-        <View style={[styles.iconBg, { backgroundColor: Colors.primary + "20" }]}>
-          <Ionicons name="map" size={56} color={Colors.primary} />
-        </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.mapWrapper, { paddingTop: topPad }]}>
+        {/* @ts-ignore - web only div element */}
+        <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
       </View>
-
-      <Text style={[styles.title, { color: theme.text }]}>Wi-Fi Калуга</Text>
-      <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-        Карта доступна в мобильном приложении.{"\n"}
-        В браузере используйте список.
-      </Text>
-
-      <View style={styles.statsRow}>
-        <View style={[styles.statItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.statNum, { color: Colors.primary }]}>{filteredSpots.length}</Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Точек</Text>
-        </View>
-        <View style={[styles.statItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.statNum, { color: Colors.verified }]}>
-            {filteredSpots.filter((s) => s.verified).length}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Проверено</Text>
-        </View>
-        <View style={[styles.statItem, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.statNum, { color: Colors.outdated }]}>
-            {filteredSpots.filter((s) => s.isOutdated).length}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Устарело</Text>
-        </View>
-      </View>
-
-      <Pressable
-        onPress={() => router.push("/(tabs)/list")}
-        style={({ pressed }) => [
-          styles.btn,
-          { backgroundColor: Colors.primary, opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <Ionicons name="list" size={18} color="#fff" />
-        <Text style={styles.btnText}>Открыть список</Text>
-      </Pressable>
-
-      <Pressable
-        onPress={() => router.push("/add")}
-        style={({ pressed }) => [
-          styles.btnOutline,
-          { borderColor: Colors.primary, opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <Ionicons name="add" size={18} color={Colors.primary} />
-        <Text style={[styles.btnOutlineText, { color: Colors.primary }]}>Добавить точку</Text>
-      </Pressable>
     </View>
   );
 }
@@ -79,82 +187,8 @@ export default function WifiMap() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    gap: 16,
-    paddingBottom: 34,
   },
-  iconWrap: {
-    marginBottom: 8,
-  },
-  iconBg: {
-    width: 100,
-    height: 100,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 15,
-    textAlign: "center",
-    fontFamily: "Inter_400Regular",
-    lineHeight: 22,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  statItem: {
+  mapWrapper: {
     flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 4,
-  },
-  statNum: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-  },
-  statLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-  },
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    width: "100%",
-  },
-  btnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-  },
-  btnOutline: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    width: "100%",
-  },
-  btnOutlineText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
   },
 });
