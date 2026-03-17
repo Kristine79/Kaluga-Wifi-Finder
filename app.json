@@ -31,7 +31,14 @@
       }
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "name": "Wi-Fi Калуга",
+      "shortName": "WiFi КЛГ",
+      "description": "Найдите бесплатные Wi-Fi точки в Калуге",
+      "themeColor": "#0065FF",
+      "backgroundColor": "#0A1628",
+      "lang": "ru"
     },
     "plugins": [
       [

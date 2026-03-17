@@ -201,6 +201,9 @@ function configureExpoAndLanding(app: express.Application) {
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 
+  // Serve PWA files (manifest.json, sw.js) from the web/ directory
+  app.use(express.static(path.resolve(process.cwd(), "web")));
+
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
 
@@ -247,4 +250,17 @@ function setupErrorHandler(app: express.Application) {
       log(`express server serving on port ${port}`);
     },
   );
+
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (botToken) {
+    try {
+      const { createTelegramBot } = await import("./telegram");
+      createTelegramBot(botToken);
+      log("[TelegramBot] Bot initialized successfully");
+    } catch (err) {
+      log("[TelegramBot] Failed to start:", err);
+    }
+  } else {
+    log("[TelegramBot] TELEGRAM_BOT_TOKEN not set — bot disabled");
+  }
 })();
