@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getApiUrl } from "@/lib/query-client";
 
 export type WifiCategory = "cafe" | "restaurant" | "bar" | "hotel" | "library" | "gym" | "mall" | "other";
 export type WifiSpeed = "slow" | "moderate" | "fast" | "ultra_fast";
@@ -311,6 +312,277 @@ const SEED_SPOTS: WifiSpot[] = [
     userVote: null,
     isUserAdded: false,
   },
+  // Real Kaluga spots
+  {
+    id: "seed_16",
+    name: "Бургер Кинг Калуга",
+    address: "ул. Московская, 85, Калуга",
+    ssid: "BurgerKing_FREE",
+    password: "",
+    category: "restaurant",
+    lat: 54.5139,
+    lng: 36.2625,
+    upvotes: 21,
+    downvotes: 1,
+    verified: true,
+    speed: "moderate",
+    createdAt: "2025-06-01T10:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_17",
+    name: "ТЦ «РИО»",
+    address: "Тульское шоссе, 2, Калуга",
+    ssid: "RIO_WiFi",
+    password: "",
+    category: "mall",
+    lat: 54.5076,
+    lng: 36.2387,
+    upvotes: 34,
+    downvotes: 4,
+    verified: true,
+    speed: "fast",
+    createdAt: "2025-04-12T09:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_18",
+    name: "ТЦ «Калуга»",
+    address: "ул. Кирова, 37, Калуга",
+    ssid: "TC_Kaluga_Free",
+    password: "",
+    category: "mall",
+    lat: 54.5168,
+    lng: 36.2609,
+    upvotes: 19,
+    downvotes: 2,
+    verified: true,
+    speed: "moderate",
+    createdAt: "2025-03-05T11:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_19",
+    name: "Кофейня «Шоколадница»",
+    address: "ул. Кирова, 44, Калуга",
+    ssid: "Shokoladnitsa",
+    password: "choco123",
+    category: "cafe",
+    lat: 54.5175,
+    lng: 36.2618,
+    upvotes: 27,
+    downvotes: 0,
+    verified: true,
+    speed: "fast",
+    createdAt: "2025-05-20T10:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_20",
+    name: "КГУ им. Циолковского",
+    address: "ул. Степана Разина, 26, Калуга",
+    ssid: "KSU_Student",
+    password: "kgu2025",
+    category: "library",
+    lat: 54.5342,
+    lng: 36.2496,
+    upvotes: 45,
+    downvotes: 3,
+    verified: true,
+    speed: "ultra_fast",
+    createdAt: "2025-02-01T08:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_21",
+    name: "Гостиница «Балчуг»",
+    address: "ул. Кирова, 2, Калуга",
+    ssid: "Balchug_Hotel",
+    password: "balchug2025",
+    category: "hotel",
+    lat: 54.5161,
+    lng: 36.2568,
+    upvotes: 11,
+    downvotes: 1,
+    verified: true,
+    speed: "fast",
+    createdAt: "2025-01-20T14:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_22",
+    name: "Додо Пицца на Ленина",
+    address: "пр-т Ленина, 36, Калуга",
+    ssid: "Dodo_Lenin",
+    password: "",
+    category: "restaurant",
+    lat: 54.5228,
+    lng: 36.2598,
+    upvotes: 16,
+    downvotes: 0,
+    verified: true,
+    speed: "moderate",
+    createdAt: "2025-07-10T12:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_23",
+    name: "Кафе «Поляна»",
+    address: "ул. Суворова, 119, Калуга",
+    ssid: "Polyana_Cafe",
+    password: "polyana1",
+    category: "cafe",
+    lat: 54.5310,
+    lng: 36.2755,
+    upvotes: 8,
+    downvotes: 2,
+    verified: false,
+    speed: "moderate",
+    createdAt: "2025-08-22T11:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_24",
+    name: "Старбакс Калуга (Galeria)",
+    address: "пр-т Ленина, 55, Калуга",
+    ssid: "Starbucks",
+    password: "",
+    category: "cafe",
+    lat: 54.5252,
+    lng: 36.2628,
+    upvotes: 38,
+    downvotes: 2,
+    verified: true,
+    speed: "fast",
+    createdAt: "2024-11-11T09:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_25",
+    name: "МФЦ Калуга",
+    address: "ул. Вилонова, 4, Калуга",
+    ssid: "MFC_Free_WiFi",
+    password: "",
+    category: "other",
+    lat: 54.5186,
+    lng: 36.2531,
+    upvotes: 23,
+    downvotes: 5,
+    verified: true,
+    speed: "slow",
+    createdAt: "2025-09-01T10:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_26",
+    name: "Калужский областной театр",
+    address: "пл. Театральная, 1, Калуга",
+    ssid: "Theatre_Kaluga",
+    password: "teatr2025",
+    category: "other",
+    lat: 54.5207,
+    lng: 36.2672,
+    upvotes: 7,
+    downvotes: 1,
+    verified: false,
+    speed: "moderate",
+    createdAt: "2025-04-30T14:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_27",
+    name: "Пятёрочка Московская",
+    address: "ул. Московская, 174, Калуга",
+    ssid: "5ka_Guest",
+    password: "",
+    category: "mall",
+    lat: 54.5239,
+    lng: 36.2694,
+    upvotes: 4,
+    downvotes: 6,
+    verified: false,
+    speed: "slow",
+    createdAt: "2025-11-20T15:00:00Z",
+    isOutdated: true,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_28",
+    name: "Ресторан «Речной вокзал»",
+    address: "ул. Московская, 2, Калуга",
+    ssid: "RechVokzal_WiFi",
+    password: "river2025",
+    category: "restaurant",
+    lat: 54.5129,
+    lng: 36.2583,
+    upvotes: 12,
+    downvotes: 3,
+    verified: true,
+    speed: "moderate",
+    createdAt: "2025-06-15T18:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_29",
+    name: "Гостиница «Приокская»",
+    address: "ул. Приокская, 1, Калуга",
+    ssid: "Priokskaya_Hotel",
+    password: "hotel321",
+    category: "hotel",
+    lat: 54.5094,
+    lng: 36.2702,
+    upvotes: 9,
+    downvotes: 0,
+    verified: true,
+    speed: "fast",
+    createdAt: "2025-03-28T10:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
+  {
+    id: "seed_30",
+    name: "ТЦ «Европа»",
+    address: "ул. Академика Королёва, 6, Калуга",
+    ssid: "Europa_Free",
+    password: "",
+    category: "mall",
+    lat: 54.5448,
+    lng: 36.2368,
+    upvotes: 17,
+    downvotes: 2,
+    verified: true,
+    speed: "moderate",
+    createdAt: "2025-07-04T11:00:00Z",
+    isOutdated: false,
+    userVote: null,
+    isUserAdded: false,
+  },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -373,10 +645,33 @@ export function WifiProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem(STORAGE_KEYS.STATS),
       ]);
 
-      setSpots(spotsJson ? JSON.parse(spotsJson) : SEED_SPOTS);
+      const localSpots: WifiSpot[] = spotsJson ? JSON.parse(spotsJson) : SEED_SPOTS;
       setFavorites(favJson ? JSON.parse(favJson) : []);
       setSettings(settingsJson ? { ...DEFAULT_SETTINGS, ...JSON.parse(settingsJson) } : DEFAULT_SETTINGS);
       setStats(statsJson ? JSON.parse(statsJson) : DEFAULT_STATS);
+
+      // Show local spots immediately, then merge OSM on top
+      setSpots(localSpots);
+
+      // Fetch real OSM spots from backend in background
+      try {
+        const apiBase = getApiUrl();
+        const osmUrl = new URL("/api/osm-spots", apiBase).toString();
+        const resp = await fetch(osmUrl, { signal: AbortSignal.timeout(12000) });
+        if (resp.ok) {
+          const osmSpots: WifiSpot[] = await resp.json();
+          // Merge: keep local spots, add OSM spots that don't conflict
+          const localIds = new Set(localSpots.map(s => s.id));
+          const newOsm = osmSpots
+            .filter(s => !localIds.has(s.id))
+            .map(s => ({ ...s, userVote: null as "up" | "down" | null, isUserAdded: false }));
+          if (newOsm.length > 0) {
+            setSpots([...localSpots, ...newOsm]);
+          }
+        }
+      } catch {
+        // OSM unavailable — that's fine, we still show local spots
+      }
     } catch (e) {
       setSpots(SEED_SPOTS);
     } finally {
@@ -386,7 +681,9 @@ export function WifiProvider({ children }: { children: ReactNode }) {
 
   const saveSpots = useCallback(async (newSpots: WifiSpot[]) => {
     setSpots(newSpots);
-    await AsyncStorage.setItem(STORAGE_KEYS.SPOTS, JSON.stringify(newSpots));
+    // Only persist local spots (not OSM), OSM are re-fetched on load
+    const localOnly = newSpots.filter(s => !s.id.startsWith("osm_"));
+    await AsyncStorage.setItem(STORAGE_KEYS.SPOTS, JSON.stringify(localOnly));
   }, []);
 
   const saveFavorites = useCallback(async (newFavs: string[]) => {

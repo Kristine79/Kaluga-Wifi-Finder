@@ -4,11 +4,152 @@ import { SEED_SPOTS, WifiSpot } from "./spots-data";
 
 let spots: WifiSpot[] = [...SEED_SPOTS];
 
+// ─── OSM real spots cache ────────────────────────────────────────────────────
+let osmCache: WifiSpot[] | null = null;
+let osmCacheTime = 0;
+const OSM_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+const AMENITY_CATEGORY: Record<string, WifiSpot["category"]> = {
+  cafe: "cafe",
+  restaurant: "restaurant",
+  bar: "bar",
+  pub: "bar",
+  fast_food: "restaurant",
+  food_court: "restaurant",
+  hotel: "hotel",
+  hostel: "hotel",
+  motel: "hotel",
+  library: "library",
+  college: "library",
+  university: "library",
+  marketplace: "mall",
+  mall: "mall",
+  cinema: "mall",
+  theatre: "mall",
+  fitness_centre: "gym",
+  gym: "gym",
+};
+
+const OVERPASS_MIRRORS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter",
+];
+
+async function fetchOsmSpots(): Promise<WifiSpot[]> {
+  // Kaluga bounding box: south,west,north,east
+  const bbox = "54.40,36.10,54.65,36.45";
+  const query =
+    `[out:json][timeout:25];` +
+    `(` +
+    `node["internet_access"](${bbox});` +
+    `way["internet_access"](${bbox});` +
+    `relation["internet_access"](${bbox});` +
+    `);` +
+    `out center;`;
+
+  let lastError: Error = new Error("No mirrors available");
+  for (const mirror of OVERPASS_MIRRORS) {
+    try {
+      const resp = await fetch(mirror, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!resp.ok) { lastError = new Error(`Overpass ${resp.status}`); continue; }
+      const text = await resp.text();
+      if (text.trimStart().startsWith("<")) { lastError = new Error("Overpass returned HTML error"); continue; }
+      const data = JSON.parse(text) as { elements: any[] };
+      return parseOsmElements(data.elements);
+    } catch (e) {
+      lastError = e as Error;
+    }
+  }
+  throw lastError;
+}
+
+function parseOsmElements(elements: any[]): WifiSpot[] {
+  const seen = new Set<string>();
+  const result: WifiSpot[] = [];
+
+  for (const el of elements) {
+    const tags = el.tags || {};
+    const name = tags.name || tags["name:ru"] || tags["name:en"];
+    if (!name) continue;
+
+    const lat = el.lat ?? el.center?.lat;
+    const lng = el.lon ?? el.center?.lon;
+    if (!lat || !lng) continue;
+
+    const key = `${lat.toFixed(4)}_${lng.toFixed(4)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const amenity: string = tags.amenity || tags.tourism || tags.leisure || tags.shop || "other";
+    const category: WifiSpot["category"] = AMENITY_CATEGORY[amenity] || "other";
+
+    const street = tags["addr:street"] || "";
+    const house = tags["addr:housenumber"] || "";
+    const address = street
+      ? `${street}${house ? ", " + house : ""}, Калуга`
+      : "Калуга";
+
+    const ssid: string = tags["internet_access:ssid"] || tags["wifi:ssid"] || "";
+    const fee: string = tags["internet_access:fee"] || tags["fee"] || "no";
+    const isFree = fee === "no" || fee === "free" || fee === "";
+
+    result.push({
+      id: `osm_${el.id}`,
+      name,
+      address,
+      ssid: ssid || (isFree ? "Free WiFi" : "Спросите у персонала"),
+      password: tags["internet_access:password"] || tags["wifi:password"] || "",
+      category,
+      lat,
+      lng,
+      upvotes: 3,
+      downvotes: 0,
+      verified: true,
+      speed: "moderate",
+      createdAt: new Date().toISOString(),
+      isOutdated: false,
+    });
+  }
+
+  return result;
+}
+
+async function getOsmSpots(): Promise<WifiSpot[]> {
+  if (osmCache && Date.now() - osmCacheTime < OSM_TTL_MS) return osmCache;
+  try {
+    osmCache = await fetchOsmSpots();
+    osmCacheTime = Date.now();
+    console.log(`[OSM] Loaded ${osmCache.length} real Wi-Fi spots in Kaluga`);
+  } catch (err) {
+    console.warn("[OSM] Failed to fetch spots:", err);
+    osmCache = osmCache ?? [];
+  }
+  return osmCache;
+}
+
 export function getSpots() {
   return spots;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Warm up OSM cache in background on startup
+  getOsmSpots().catch(() => {});
+
+  app.get("/api/osm-spots", async (_req: Request, res: Response) => {
+    try {
+      const osm = await getOsmSpots();
+      res.json(osm);
+    } catch (err) {
+      res.status(503).json({ error: "OSM unavailable", spots: [] });
+    }
+  });
+
   app.get("/api/spots", (req: Request, res: Response) => {
     const { category, verified, q } = req.query;
     let filtered = spots;
