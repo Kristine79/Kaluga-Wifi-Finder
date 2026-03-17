@@ -266,6 +266,7 @@ export default function WifiMap() {
   const markersRef = useRef<any[]>([]);
   const maplibreRef = useRef<any>(null);
   const filteredSpotsRef = useRef<WifiSpot[]>([]);
+  const markerJustClickedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
 
   const { spots, settings } = useWifi();
@@ -314,7 +315,10 @@ export default function WifiMap() {
       const el = makeMarkerEl(color);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
+        markerJustClickedRef.current = true;  // block map click from closing popup
         setSelectedSpot(spot);
+        // Reset flag after event cycle
+        setTimeout(() => { markerJustClickedRef.current = false; }, 50);
       });
 
       const marker = new maplibregl.Marker({ element: el })
@@ -336,13 +340,23 @@ export default function WifiMap() {
       const maplibregl = (mod as any).default ?? mod;
       maplibreRef.current = maplibregl;
 
-      const style = isDark
-        ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-        : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+      // Pure OSM raster tiles — single source, no external style conflicts
+      const osmStyle = {
+        version: 8 as const,
+        sources: {
+          osm: {
+            type: "raster" as const,
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+            attribution: "© <a href='https://openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
+          },
+        },
+        layers: [{ id: "osm", type: "raster" as const, source: "osm" }],
+      };
 
       const map = new maplibregl.Map({
         container,
-        style,
+        style: osmStyle,
         center: [KALUGA_LNG, KALUGA_LAT],
         zoom: 13,
         attributionControl: false,
@@ -353,7 +367,11 @@ export default function WifiMap() {
         "bottom-left"
       );
 
-      map.on("click", () => setSelectedSpot(null));
+      // Close popup only when clicking on empty map area (not on markers)
+      map.on("click", () => {
+        if (markerJustClickedRef.current) return;
+        setSelectedSpot(null);
+      });
 
       let moveTimer: any;
       map.on("moveend", () => {
@@ -427,28 +445,7 @@ export default function WifiMap() {
     setSelectedSpot(null);
   }, [filteredSpots, mapReady, updateMarkers]);
 
-  // ─── Tile style when theme changes ─────────────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const style = isDark
-      ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-      : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-    map.setStyle(style);
-    map.once("styledata", () => {
-      if (!map.getSource("radius-src")) {
-        map.addSource("radius-src", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        map.addLayer({ id: "radius-fill", type: "fill", source: "radius-src", paint: { "fill-color": "#0065FF", "fill-opacity": 0.1 } });
-        map.addLayer({ id: "radius-stroke", type: "line", source: "radius-src", paint: { "line-color": "#0065FF", "line-width": 2, "line-opacity": 0.5 } });
-      }
-      if (!map.getSource("user-src")) {
-        map.addSource("user-src", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        map.addLayer({ id: "user-halo", type: "circle", source: "user-src", paint: { "circle-radius": 14, "circle-color": "#0065FF", "circle-opacity": 0.18 } });
-        map.addLayer({ id: "user-dot", type: "circle", source: "user-src", paint: { "circle-radius": 7, "circle-color": "#0065FF", "circle-stroke-width": 2.5, "circle-stroke-color": "#fff" } });
-      }
-      updateMarkers(filteredSpotsRef.current);
-    });
-  }, [isDark]);
+  // (OSM raster style is static — no dark/light switching needed)
 
   // ─── Radius circle update ───────────────────────────────────────────────────
   useEffect(() => {
