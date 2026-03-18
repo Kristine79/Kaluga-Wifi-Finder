@@ -15,8 +15,25 @@ import type { WifiCategory, WifiSpot } from "@/context/WifiContext";
 const KALUGA: [number, number] = [54.5293, 36.2754];
 const ZOOM = 13;
 
-/** OpenFreeMap Positron — free vector tiles, no API key, matches the reference UI */
-const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+/** CARTO Positron raster — clean light style matching the reference app, no external JSON required */
+const MAP_STYLE = {
+  version: 8 as const,
+  sources: {
+    carto: {
+      type: "raster" as const,
+      tiles: [
+        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      maxzoom: 20,
+      attribution:
+        '© <a href="https://carto.com/attributions">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    },
+  },
+  layers: [{ id: "carto-tiles", type: "raster" as const, source: "carto" }],
+};
 
 const DIST_OPTIONS = [
   { label: "500m", value: 0.5 },
@@ -165,11 +182,12 @@ function markerHtml(color: string, size = 36) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function WifiMap() {
-  const mapDivRef  = useRef<any>(null);
-  const mapRef     = useRef<any>(null);
-  const libRef     = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const clickGuard = useRef(false);
+  const mapDivRef   = useRef<any>(null);
+  const mapRef      = useRef<any>(null);
+  const libRef      = useRef<any>(null);
+  const markersRef  = useRef<any[]>([]);
+  const clickGuard  = useRef(false);
+  const readyTimerRef = useRef<any>(null);
 
   const { spots, settings } = useWifi();
   const insets = useSafeAreaInsets();
@@ -208,11 +226,14 @@ export default function WifiMap() {
       const map = new L.Map({
         container: el,
         style: MAP_STYLE,
-        center: [KALUGA[1], KALUGA[0]],   // maplibre uses [lng, lat]
+        center: [KALUGA[1], KALUGA[0]],   // maplibre: [lng, lat]
         zoom: ZOOM,
         attributionControl: false,
         maxZoom: 19,
       });
+
+      // Store ref immediately so marker effect can run even before full load
+      mapRef.current = map;
 
       map.addControl(new L.AttributionControl({ compact: true }), "bottom-left");
 
@@ -228,46 +249,38 @@ export default function WifiMap() {
       });
 
       map.on("load", () => {
+        clearTimeout(readyTimerRef.current);
         if (cancelled) return;
 
-        // Radius circle layers
-        map.addSource("radius-src", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
-        });
-        map.addLayer({
-          id: "radius-fill", type: "fill", source: "radius-src",
-          paint: { "fill-color": Colors.primary, "fill-opacity": 0.07 },
-        });
-        map.addLayer({
-          id: "radius-stroke", type: "line", source: "radius-src",
-          paint: { "line-color": Colors.primary, "line-width": 1.5, "line-opacity": 0.45 },
-        });
+        // GeoJSON sources for radius circle and user location dot
+        if (!map.getSource("radius-src")) {
+          map.addSource("radius-src", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+          map.addLayer({ id: "radius-fill", type: "fill", source: "radius-src",
+            paint: { "fill-color": Colors.primary, "fill-opacity": 0.07 } });
+          map.addLayer({ id: "radius-stroke", type: "line", source: "radius-src",
+            paint: { "line-color": Colors.primary, "line-width": 1.5, "line-opacity": 0.45 } });
+        }
+        if (!map.getSource("user-src")) {
+          map.addSource("user-src", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+          map.addLayer({ id: "user-halo", type: "circle", source: "user-src",
+            paint: { "circle-radius": 14, "circle-color": Colors.primary, "circle-opacity": 0.15 } });
+          map.addLayer({ id: "user-dot", type: "circle", source: "user-src",
+            paint: { "circle-radius": 7, "circle-color": Colors.primary,
+              "circle-stroke-width": 2.5, "circle-stroke-color": "#fff" } });
+        }
 
-        // User dot layers
-        map.addSource("user-src", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
-        });
-        map.addLayer({
-          id: "user-halo", type: "circle", source: "user-src",
-          paint: { "circle-radius": 14, "circle-color": Colors.primary, "circle-opacity": 0.15 },
-        });
-        map.addLayer({
-          id: "user-dot", type: "circle", source: "user-src",
-          paint: {
-            "circle-radius": 7, "circle-color": Colors.primary,
-            "circle-stroke-width": 2.5, "circle-stroke-color": "#fff",
-          },
-        });
-
-        mapRef.current = map;
-        setReady(true);
+        if (!cancelled) setReady(true);
       });
+
+      // Fallback: set ready after 1.5s even if load event doesn't fire
+      readyTimerRef.current = setTimeout(() => {
+        if (!cancelled) setReady(true);
+      }, 1500);
     });
 
     return () => {
       cancelled = true;
+      clearTimeout(readyTimerRef.current);
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
     };
   }, []);
