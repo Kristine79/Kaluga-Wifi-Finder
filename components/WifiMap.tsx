@@ -294,11 +294,9 @@ export default function WifiMap() {
         setTimeout(() => { clickGuard.current = false; }, 80);
       });
 
-      const marker = new L.Marker(
-        { lng: spot.lng, lat: spot.lat },
-        { element: markerEl, anchor: "center" },
-      );
-      marker.addTo(map);
+      const marker = new L.Marker({ element: markerEl, anchor: "center" })
+        .setLngLat([spot.lng, spot.lat])
+        .addTo(map);
       markersRef.current.push(marker);
     });
   }, [filtered, ready]);
