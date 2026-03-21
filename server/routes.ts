@@ -251,6 +251,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ total, verified, categories });
   });
 
+  app.get("/api/maps-config", (_req: Request, res: Response) => {
+    res.json({ yandexMapsApiKey: process.env.YANDEX_MAPS_API_KEY || "" });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

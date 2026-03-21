@@ -8,7 +8,7 @@
 - **Backend**: Express.js (port 5000) — API + landing page + Telegram bot
 - **Dev server**: Expo Metro (port 8081)
 - **State**: AsyncStorage (client), in-memory array (server)
-- **Maps**: Leaflet.js (web), react-native-maps@1.18.0 (native)
+- **Maps**: Яндекс Карты JS API 2.1 (web + native via WebView)
 - **Telegram**: node-telegram-bot-api (polling mode)
 
 ## Key Features
@@ -65,6 +65,7 @@ web/
 - `POST /api/spots/:id/vote` — vote (body: { vote: "up"|"down" })
 - `POST /api/spots/:id/report` — report outdated
 - `GET /api/stats` — total/verified counts by category
+- `GET /api/maps-config` — returns Yandex Maps API key for the frontend
 
 ## Environment Variables
 

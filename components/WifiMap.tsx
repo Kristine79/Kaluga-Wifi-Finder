@@ -9,71 +9,43 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useWifi } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
+import { getApiUrl } from "@/lib/query-client";
 import type { WifiCategory, WifiSpot } from "@/context/WifiContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const KALUGA: [number, number] = [54.5293, 36.2754];
 const ZOOM = 13;
 
-/** CARTO Positron raster — clean light style matching the reference app, no external JSON required */
-const MAP_STYLE = {
-  version: 8 as const,
-  sources: {
-    carto: {
-      type: "raster" as const,
-      tiles: [
-        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      maxzoom: 20,
-      attribution:
-        '© <a href="https://carto.com/attributions">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    },
-  },
-  layers: [{ id: "carto-tiles", type: "raster" as const, source: "carto" }],
+const CAT_PRESET: Record<string, string> = {
+  cafe:       "islands#blueDotIcon",
+  restaurant: "islands#redDotIcon",
+  bar:        "islands#violetDotIcon",
+  hotel:      "islands#cyanDotIcon",
+  mall:       "islands#pinkDotIcon",
+  library:    "islands#greenDotIcon",
+  gym:        "islands#orangeDotIcon",
+  other:      "islands#grayDotIcon",
 };
 
 const DIST_OPTIONS = [
   { label: "500m", value: 0.5 },
-  { label: "1km",  value: 1   },
-  { label: "2km",  value: 2   },
-  { label: "5km",  value: 5   },
-  { label: "10km", value: 10  },
+  { label: "1км",  value: 1   },
+  { label: "2км",  value: 2   },
+  { label: "5км",  value: 5   },
+  { label: "10км", value: 10  },
 ];
 
 const CATS: { key: WifiCategory | "all"; label: string; icon: any }[] = [
-  { key: "cafe",       label: "Cafes",   icon: "cafe-outline"       },
-  { key: "restaurant", label: "Food",    icon: "restaurant-outline" },
-  { key: "bar",        label: "Bars",    icon: "wine-outline"       },
-  { key: "hotel",      label: "Hotels",  icon: "bed-outline"        },
-  { key: "mall",       label: "Malls",   icon: "bag-outline"        },
-  { key: "library",    label: "Library", icon: "library-outline"    },
+  { key: "cafe",       label: "Кафе",    icon: "cafe-outline"       },
+  { key: "restaurant", label: "Еда",     icon: "restaurant-outline" },
+  { key: "bar",        label: "Бары",    icon: "wine-outline"       },
+  { key: "hotel",      label: "Отели",   icon: "bed-outline"        },
+  { key: "mall",       label: "ТЦ",      icon: "bag-outline"        },
+  { key: "library",    label: "Библ.",   icon: "library-outline"    },
 ];
 
-// Category → blue tint shown in the reference screenshot
-const CAT_COLOR: Record<string, string> = {
-  cafe:       "#0065FF",
-  restaurant: "#EF4444",
-  bar:        "#8B5CF6",
-  hotel:      "#0EA5E9",
-  mall:       "#EC4899",
-  library:    "#10B981",
-  gym:        "#F59E0B",
-  other:      "#6B7280",
-};
-
-// WiFi icon paths (simple SVG)
-const WIFI_SVG = `
-  <path d="M5 12.55a11 11 0 0 1 14.08 0" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <path d="M1.42 9a16 16 0 0 1 21.16 0" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <circle cx="12" cy="20" r="1.6" fill="white"/>
-`;
-
 // ─── Haversine ────────────────────────────────────────────────────────────────
-function km(lat1: number, lng1: number, lat2: number, lng2: number) {
+function kmDist(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371, toR = Math.PI / 180;
   const dLat = (lat2 - lat1) * toR, dLng = (lng2 - lng1) * toR;
   const a = Math.sin(dLat / 2) ** 2
@@ -81,25 +53,13 @@ function km(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ─── GeoJSON circle ───────────────────────────────────────────────────────────
-function circleGeoJSON(lat: number, lng: number, radiusKm: number) {
-  const pts = 64, coords: [number, number][] = [];
-  for (let i = 0; i <= pts; i++) {
-    const a = (i / pts) * 2 * Math.PI;
-    const dlat = (radiusKm / 111.32) * Math.cos(a);
-    const dlng = (radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180))) * Math.sin(a);
-    coords.push([lng + dlng, lat + dlat]);
-  }
-  return { type: "Feature" as const, geometry: { type: "Polygon" as const, coordinates: [coords] }, properties: {} };
-}
-
 // ─── Spot card popup ──────────────────────────────────────────────────────────
 function SpotCard({ spot, onClose }: { spot: WifiSpot; onClose: () => void }) {
   const badge = spot.isOutdated
-    ? { txt: "Устарело",      bg: "#FEF3C7", fg: "#92400E" }
+    ? { txt: "Устарело",       bg: "#FEF3C7", fg: "#92400E" }
     : spot.verified || spot.upvotes >= 5
-      ? { txt: "Проверено",   bg: "#D1FAE5", fg: "#065F46" }
-      : { txt: "Не проверено",bg: "#DBEAFE", fg: "#1E40AF" };
+      ? { txt: "Проверено",    bg: "#D1FAE5", fg: "#065F46" }
+      : { txt: "Не проверено", bg: "#DBEAFE", fg: "#1E40AF" };
 
   return (
     <View style={cs.wrap} pointerEvents="box-none">
@@ -142,9 +102,7 @@ function SpotCard({ spot, onClose }: { spot: WifiSpot; onClose: () => void }) {
 }
 
 const cs = StyleSheet.create({
-  wrap: {
-    position: "absolute", bottom: 110, left: 12, right: 12, zIndex: 2000,
-  },
+  wrap: { position: "absolute", bottom: 110, left: 12, right: 12, zIndex: 2000 },
   box: {
     backgroundColor: "#fff", borderRadius: 20, padding: 16,
     shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
@@ -168,207 +126,203 @@ const cs = StyleSheet.create({
   btnTxt: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });
 
-// ─── Build marker HTML  (matches reference app: round badge + wifi icon) ──────
-function markerHtml(color: string, size = 36) {
-  return `<div style="
-    width:${size}px;height:${size}px;border-radius:50%;
-    background:${color};
-    border:2.5px solid white;
-    box-shadow:0 2px 8px rgba(0,0,0,.28);
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;
-  "><svg width="18" height="18" viewBox="0 0 24 24">${WIFI_SVG}</svg></div>`;
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function WifiMap() {
-  const mapDivRef   = useRef<any>(null);
-  const mapRef      = useRef<any>(null);
-  const libRef      = useRef<any>(null);
-  const markersRef  = useRef<any[]>([]);
-  const clickGuard  = useRef(false);
-  const readyTimerRef = useRef<any>(null);
+  const mapDivRef      = useRef<any>(null);
+  const mapRef         = useRef<any>(null);
+  const markersRef     = useRef<any[]>([]);
+  const userMarkerRef  = useRef<any>(null);
+  const circleRef      = useRef<any>(null);
+  const apiKeyRef      = useRef<string>("");
 
   const { spots, settings } = useWifi();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const [ready, setReady]             = useState(false);
-  const [selCat, setSelCat]           = useState<WifiCategory | "all">("all");
-  const [selDist, setSelDist]         = useState<number | null>(null);
-  const [userLoc, setUserLoc]         = useState<[number, number] | null>(null);
-  const [center, setCenter]           = useState<[number, number]>(KALUGA);
+  const [ready, setReady]                   = useState(false);
+  const [selCat, setSelCat]                 = useState<WifiCategory | "all">("all");
+  const [selDist, setSelDist]               = useState<number | null>(null);
+  const [userLoc, setUserLoc]               = useState<[number, number] | null>(null);
+  const [center, setCenter]                 = useState<[number, number]>(KALUGA);
   const [showSearchArea, setShowSearchArea] = useState(false);
-  const [activeSpot, setActiveSpot]   = useState<WifiSpot | null>(null);
+  const [activeSpot, setActiveSpot]         = useState<WifiSpot | null>(null);
 
-  // ─── filtered spots ─────────────────────────────────────────────────────────
+  // ─── Filtered spots ──────────────────────────────────────────────────────────
   const filtered = useMemo(() => spots.filter((s) => {
     if (settings.verifiedOnly && !s.verified && s.upvotes < 5) return false;
     if (selCat !== "all" && s.category !== selCat) return false;
     if (selDist !== null) {
       const [clat, clng] = userLoc ?? center;
-      if (km(clat, clng, s.lat, s.lng) > selDist) return false;
+      if (kmDist(clat, clng, s.lat, s.lng) > selDist) return false;
     }
     return true;
   }), [spots, settings.verifiedOnly, selCat, selDist, userLoc, center]);
 
-  // ─── Init map once ───────────────────────────────────────────────────────────
+  // ─── Fetch API key + load Yandex Maps script ─────────────────────────────────
   useEffect(() => {
-    const el = mapDivRef.current;
-    if (!el || mapRef.current) return;
     let cancelled = false;
 
-    import("maplibre-gl").then((mod) => {
-      if (cancelled || mapRef.current) return;
-      const L = (mod as any).default ?? mod;
-      libRef.current = L;
+    const apiUrl = new URL("/api/maps-config", getApiUrl()).toString();
+    fetch(apiUrl)
+      .then((r) => r.json())
+      .then(({ yandexMapsApiKey }: { yandexMapsApiKey: string }) => {
+        if (cancelled || !yandexMapsApiKey) return;
+        apiKeyRef.current = yandexMapsApiKey;
 
-      const map = new L.Map({
-        container: el,
-        style: MAP_STYLE,
-        center: [KALUGA[1], KALUGA[0]],   // maplibre: [lng, lat]
-        zoom: ZOOM,
-        attributionControl: false,
-        maxZoom: 19,
-      });
-
-      // Store ref immediately so marker effect can run even before full load
-      mapRef.current = map;
-
-      map.addControl(new L.AttributionControl({ compact: true }), "bottom-left");
-
-      map.on("click", () => {
-        if (clickGuard.current) { clickGuard.current = false; return; }
-        setActiveSpot(null);
-      });
-
-      let t: any;
-      map.on("moveend", () => {
-        clearTimeout(t);
-        t = setTimeout(() => { if (!cancelled) setShowSearchArea(true); }, 800);
-      });
-
-      map.on("load", () => {
-        clearTimeout(readyTimerRef.current);
-        if (cancelled) return;
-
-        // GeoJSON sources for radius circle and user location dot
-        if (!map.getSource("radius-src")) {
-          map.addSource("radius-src", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-          map.addLayer({ id: "radius-fill", type: "fill", source: "radius-src",
-            paint: { "fill-color": Colors.primary, "fill-opacity": 0.07 } });
-          map.addLayer({ id: "radius-stroke", type: "line", source: "radius-src",
-            paint: { "line-color": Colors.primary, "line-width": 1.5, "line-opacity": 0.45 } });
-        }
-        if (!map.getSource("user-src")) {
-          map.addSource("user-src", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-          map.addLayer({ id: "user-halo", type: "circle", source: "user-src",
-            paint: { "circle-radius": 14, "circle-color": Colors.primary, "circle-opacity": 0.15 } });
-          map.addLayer({ id: "user-dot", type: "circle", source: "user-src",
-            paint: { "circle-radius": 7, "circle-color": Colors.primary,
-              "circle-stroke-width": 2.5, "circle-stroke-color": "#fff" } });
+        // Inject script if not already present
+        if (!document.getElementById("ymaps-script")) {
+          const script = document.createElement("script");
+          script.id = "ymaps-script";
+          script.src = `https://api-maps.yandex.ru/2.1/?apikey=${yandexMapsApiKey}&lang=ru_RU&load=package.full`;
+          document.head.appendChild(script);
         }
 
-        if (!cancelled) setReady(true);
-      });
+        // Poll until ymaps global is ready
+        let attempts = 0;
+        const poll = setInterval(() => {
+          if (cancelled) { clearInterval(poll); return; }
+          if ((window as any).ymaps) {
+            clearInterval(poll);
+            (window as any).ymaps.ready(() => {
+              if (cancelled || mapRef.current || !mapDivRef.current) return;
+              initMap((window as any).ymaps);
+            });
+          }
+          if (attempts++ > 100) clearInterval(poll);
+        }, 100);
+      })
+      .catch(() => {});
 
-      // Fallback: set ready after 1.5s even if load event doesn't fire
-      readyTimerRef.current = setTimeout(() => {
-        if (!cancelled) setReady(true);
-      }, 1500);
-    });
-
-    return () => {
-      cancelled = true;
-      clearTimeout(readyTimerRef.current);
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // ─── Update markers ──────────────────────────────────────────────────────────
+  function initMap(ymaps: any) {
+    const map = new ymaps.Map(mapDivRef.current, {
+      center: KALUGA,
+      zoom: ZOOM,
+      controls: ["zoomControl"],
+    }, { suppressMapOpenBlock: true });
+
+    mapRef.current = map;
+
+    map.events.add("click", () => setActiveSpot(null));
+
+    let bounceTimer: any;
+    map.events.add("boundschange", () => {
+      clearTimeout(bounceTimer);
+      bounceTimer = setTimeout(() => setShowSearchArea(true), 800);
+    });
+
+    setReady(true);
+  }
+
+  // ─── Update markers ───────────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    const L   = libRef.current;
-    if (!map || !L || !ready) return;
+    if (!map || !ready) return;
+    const ymaps = (window as any).ymaps;
+    if (!ymaps) return;
 
-    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.forEach((pm) => map.geoObjects.remove(pm));
     markersRef.current = [];
 
     filtered.forEach((spot) => {
-      const color = CAT_COLOR[spot.category] ?? Colors.primary;
-      const el = document.createElement("div");
-      el.innerHTML = markerHtml(color, 36);
-      const markerEl = el.firstChild as HTMLElement;
+      const preset = spot.isOutdated
+        ? "islands#orangeDotIcon"
+        : spot.verified || spot.upvotes >= 5
+          ? "islands#greenDotIcon"
+          : (CAT_PRESET[spot.category] ?? "islands#blueDotIcon");
 
-      markerEl.addEventListener("click", (e) => {
+      const pm = new ymaps.Placemark(
+        [spot.lat, spot.lng],
+        { hintContent: spot.name },
+        { preset, hasBalloon: false },
+      );
+
+      pm.events.add("click", (e: any) => {
         e.stopPropagation();
-        clickGuard.current = true;
         setActiveSpot(spot);
-        setTimeout(() => { clickGuard.current = false; }, 80);
       });
 
-      const marker = new L.Marker({ element: markerEl, anchor: "center" })
-        .setLngLat([spot.lng, spot.lat])
-        .addTo(map);
-      markersRef.current.push(marker);
+      map.geoObjects.add(pm);
+      markersRef.current.push(pm);
     });
   }, [filtered, ready]);
 
-  // ─── Radius circle ───────────────────────────────────────────────────────────
+  // ─── User location dot ────────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const src = map.getSource("radius-src");
-    if (!src) return;
-    if (selDist !== null) {
-      const [clat, clng] = userLoc ?? center;
-      (src as any).setData({
-        type: "FeatureCollection",
-        features: [circleGeoJSON(clat, clng, selDist)],
-      });
-    } else {
-      (src as any).setData({ type: "FeatureCollection", features: [] });
-    }
-  }, [selDist, userLoc, center, ready]);
+    const ymaps = (window as any).ymaps;
+    if (!ymaps) return;
 
-  // ─── User dot ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
-    const src = map.getSource("user-src");
-    if (!src) return;
+    if (userMarkerRef.current) {
+      map.geoObjects.remove(userMarkerRef.current);
+      userMarkerRef.current = null;
+    }
+
     if (userLoc) {
-      (src as any).setData({
-        type: "FeatureCollection",
-        features: [{ type: "Feature", geometry: { type: "Point", coordinates: [userLoc[1], userLoc[0]] }, properties: {} }],
-      });
-    } else {
-      (src as any).setData({ type: "FeatureCollection", features: [] });
+      const pm = new ymaps.Placemark(
+        userLoc,
+        {},
+        { preset: "islands#blueDotIcon", iconColor: Colors.primary },
+      );
+      map.geoObjects.add(pm);
+      userMarkerRef.current = pm;
     }
   }, [userLoc, ready]);
 
-  // ─── Handlers ────────────────────────────────────────────────────────────────
+  // ─── Radius circle ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const ymaps = (window as any).ymaps;
+    if (!ymaps) return;
+
+    if (circleRef.current) {
+      map.geoObjects.remove(circleRef.current);
+      circleRef.current = null;
+    }
+
+    if (selDist !== null) {
+      const [clat, clng] = userLoc ?? center;
+      const circle = new ymaps.Circle(
+        [[clat, clng], selDist * 1000],
+        {},
+        {
+          fillColor: "#0065FF15",
+          strokeColor: "#0065FF",
+          strokeWidth: 2,
+          strokeOpacity: 0.5,
+        },
+      );
+      map.geoObjects.add(circle);
+      circleRef.current = circle;
+    }
+  }, [selDist, userLoc, center, ready]);
+
+  // ─── Handlers ─────────────────────────────────────────────────────────────────
   const handleLocate = useCallback(() => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((pos) => {
       const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
       setUserLoc(loc);
-      mapRef.current?.flyTo({ center: [loc[1], loc[0]], zoom: 15 });
+      mapRef.current?.setCenter(loc, 15, { duration: 500 });
     });
   }, []);
 
   const handleSearchArea = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
-    const c = map.getCenter();
-    setCenter([c.lat, c.lng]);
+    const c = map.getCenter(); // [lat, lng] in ymaps
+    setCenter([c[0], c[1]]);
     setShowSearchArea(false);
   }, []);
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={s.root}>
-      {/* Map canvas */}
+      {/* Map canvas — Yandex Maps attaches to this div */}
       <View style={StyleSheet.absoluteFill}>
         {/* @ts-ignore web-only ref */}
         <div ref={mapDivRef} style={{ position: "absolute", inset: 0 }} />
@@ -376,16 +330,14 @@ export default function WifiMap() {
 
       {/* ── Top UI ── */}
       <View style={[s.top, { paddingTop: topPad + 8 }]} pointerEvents="box-none">
-        {/* Search bar */}
         <Pressable
           onPress={() => router.push("/(tabs)/list")}
           style={({ pressed }) => [s.searchBar, { opacity: pressed ? 0.92 : 1 }]}
         >
           <Ionicons name="search" size={17} color="#9CA3AF" />
-          <Text style={s.searchPh}>Search WiFi spots...</Text>
+          <Text style={s.searchPh}>Поиск Wi-Fi точек...</Text>
         </Pressable>
 
-        {/* Distance pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
           {DIST_OPTIONS.map((o) => {
             const on = selDist === o.value;
@@ -401,7 +353,6 @@ export default function WifiMap() {
           })}
         </ScrollView>
 
-        {/* Category chips (icon + label) */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
           {CATS.map((cat) => {
             const on = selCat === cat.key;
@@ -419,7 +370,7 @@ export default function WifiMap() {
         </ScrollView>
       </View>
 
-      {/* ── Spot counter (below filters, left-aligned) ── */}
+      {/* ── Spot counter ── */}
       {!activeSpot && (
         <View style={[s.counterWrap, { top: topPad + 8 + 136 }]}>
           <Pressable
@@ -427,7 +378,7 @@ export default function WifiMap() {
             style={({ pressed }) => [s.counter, { opacity: pressed ? 0.8 : 1 }]}
           >
             <Ionicons name="wifi" size={14} color="#374151" />
-            <Text style={s.counterTxt}>{filtered.length} spots</Text>
+            <Text style={s.counterTxt}>{filtered.length} точек</Text>
             <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
           </Pressable>
         </View>
@@ -441,7 +392,7 @@ export default function WifiMap() {
             style={({ pressed }) => [s.searchAreaBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="refresh" size={14} color={Colors.primary} />
-            <Text style={s.searchAreaTxt}>Search this area</Text>
+            <Text style={s.searchAreaTxt}>Искать в этом районе</Text>
           </Pressable>
         </View>
       )}
@@ -449,7 +400,7 @@ export default function WifiMap() {
       {/* ── Spot card popup ── */}
       {activeSpot && <SpotCard spot={activeSpot} onClose={() => setActiveSpot(null)} />}
 
-      {/* ── Bottom-right buttons (refresh + locate) ── */}
+      {/* ── Bottom-right buttons ── */}
       <View style={s.fab2}>
         <Pressable onPress={handleSearchArea} style={({ pressed }) => [s.iconBtn, { opacity: pressed ? 0.8 : 1, marginBottom: 10 }]}>
           <Ionicons name="refresh" size={20} color={Colors.primary} />
@@ -474,7 +425,6 @@ export default function WifiMap() {
 const s = StyleSheet.create({
   root: { flex: 1, overflow: "hidden" as any },
 
-  // Top overlay
   top: {
     position: "absolute", top: 0, left: 0, right: 0,
     paddingHorizontal: 12, gap: 8, zIndex: 1000,
@@ -508,7 +458,6 @@ const s = StyleSheet.create({
   },
   catTxt: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  // Spot counter
   counterWrap: { position: "absolute", left: 12, zIndex: 1000 },
   counter: {
     flexDirection: "row", alignItems: "center", gap: 6,
@@ -519,7 +468,6 @@ const s = StyleSheet.create({
   },
   counterTxt: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
 
-  // Search area
   searchAreaWrap: {
     position: "absolute", top: "40%", left: 0, right: 0,
     alignItems: "center", zIndex: 900,
@@ -533,7 +481,6 @@ const s = StyleSheet.create({
   },
   searchAreaTxt: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.primary },
 
-  // Bottom-right icon buttons
   fab2: { position: "absolute", right: 14, bottom: 110, zIndex: 1000 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: "#fff",
@@ -541,14 +488,12 @@ const s = StyleSheet.create({
     shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
   },
-
-  // FAB
   fab: {
-    position: "absolute", left: 14, bottom: 110,
-    width: 54, height: 54, borderRadius: 27,
+    position: "absolute", right: 14, bottom: 168, zIndex: 1000,
+    width: 52, height: 52, borderRadius: 26,
     backgroundColor: Colors.primary,
     alignItems: "center", justifyContent: "center",
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 10, elevation: 8, zIndex: 1000,
+    shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
   },
 });
