@@ -199,8 +199,12 @@ export default function WifiMap() {
     const map = new ymaps.Map(mapDivRef.current, {
       center: KALUGA,
       zoom: ZOOM,
-      controls: ["zoomControl"],
+      controls: [],
     }, { suppressMapOpenBlock: true });
+
+    map.controls.add("zoomControl", {
+      position: { right: 10, top: 120 },
+    });
 
     mapRef.current = map;
 
@@ -315,7 +319,7 @@ export default function WifiMap() {
       </View>
 
       {/* ── Top UI ── */}
-      <View style={[s.top, { paddingTop: topPad + 4 }]} pointerEvents="box-none">
+      <View style={[s.top, { paddingTop: topPad }]} pointerEvents="box-none">
         <Pressable
           onPress={() => router.push("/(tabs)/list")}
           style={({ pressed }) => [s.searchBar, { opacity: pressed ? 0.92 : 1 }]}
@@ -358,7 +362,7 @@ export default function WifiMap() {
 
       {/* ── Spot counter ── */}
       {!activeSpot && (
-        <View style={[s.counterWrap, { top: topPad + 4 + 136 }]}>
+        <View style={[s.counterWrap, { top: topPad + 136 }]}>
           <Pressable
             onPress={() => router.push("/(tabs)/list")}
             style={({ pressed }) => [s.counter, { opacity: pressed ? 0.8 : 1 }]}

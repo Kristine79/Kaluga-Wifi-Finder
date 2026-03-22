@@ -68,8 +68,12 @@ function buildMapHtml(apiKey: string, spotsJson: string): string {
       map = new ymaps.Map('map', {
         center: [54.5293, 36.2754],
         zoom: 12,
-        controls: ['zoomControl']
+        controls: []
       }, { suppressMapOpenBlock: true });
+
+      map.controls.add('zoomControl', {
+        position: { right: 10, top: 10 }
+      });
 
       collection = new ymaps.GeoObjectCollection();
       map.geoObjects.add(collection);
