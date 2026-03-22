@@ -18,23 +18,13 @@ import { useTheme } from "@/hooks/useTheme";
 import { useWifi, WifiSpot, WifiCategory } from "@/context/WifiContext";
 import { haversineDistance, formatDistance } from "@/hooks/useTheme";
 import Colors from "@/constants/colors";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const KALUGA_LAT = 54.5293;
 const KALUGA_LNG = 36.2754;
 
 type FilterTab = "all" | "favorites" | "verified";
 type CategoryFilter = WifiCategory | "all";
-
-const CATEGORY_FILTERS: { key: CategoryFilter; label: string; icon: string }[] = [
-  { key: "all", label: "Все", icon: "grid-outline" },
-  { key: "cafe", label: "Кафе", icon: "cafe-outline" },
-  { key: "restaurant", label: "Рестораны", icon: "restaurant-outline" },
-  { key: "bar", label: "Бары", icon: "wine-outline" },
-  { key: "hotel", label: "Отели", icon: "bed-outline" },
-  { key: "library", label: "Библиотеки", icon: "library-outline" },
-  { key: "gym", label: "Спорт", icon: "barbell-outline" },
-  { key: "mall", label: "ТЦ", icon: "bag-outline" },
-];
 
 const CATEGORY_ICONS: Record<WifiCategory, string> = {
   cafe: "cafe",
@@ -48,11 +38,12 @@ const CATEGORY_ICONS: Record<WifiCategory, string> = {
 };
 
 function SpeedBadge({ speed }: { speed: WifiSpot["speed"] }) {
+  const t = useTranslation();
   const configs = {
-    slow: { color: Colors.slow, label: "Медл." },
-    moderate: { color: Colors.moderate, label: "Средн." },
-    fast: { color: Colors.fast, label: "Быстр." },
-    ultra_fast: { color: Colors.ultraFast, label: "Ультра" },
+    slow:       { color: Colors.slow,      label: t.speed.slowShort       },
+    moderate:   { color: Colors.moderate,  label: t.speed.moderateShort   },
+    fast:       { color: Colors.fast,      label: t.speed.fastShort       },
+    ultra_fast: { color: Colors.ultraFast, label: t.speed.ultra_fastShort },
   };
   const cfg = configs[speed];
   return (
@@ -80,6 +71,7 @@ function SpotCard({
   onPress: () => void;
   onToggleFav: () => void;
 }) {
+  const t = useTranslation();
   const dist = haversineDistance(KALUGA_LAT, KALUGA_LNG, spot.lat, spot.lng);
   const catColor = Colors.category[spot.category] || Colors.primary;
   const statusColor = spot.isOutdated
@@ -144,7 +136,7 @@ function SpotCard({
           {spot.password === "" && (
             <View style={styles.openBadge}>
               <Ionicons name="lock-open-outline" size={11} color={Colors.verified} />
-              <Text style={[styles.openText, { color: Colors.verified }]}>Открытая</Text>
+              <Text style={[styles.openText, { color: Colors.verified }]}>{t.list.open}</Text>
             </View>
           )}
         </View>
@@ -153,7 +145,7 @@ function SpotCard({
           <View style={[styles.statusBadge, { backgroundColor: statusColor + "22" }]}>
             <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
             <Text style={[styles.statusText, { color: statusColor }]}>
-              {spot.isOutdated ? "Устарело" : spot.verified ? "Проверено" : "Не проверено"}
+              {spot.isOutdated ? t.map.outdated : spot.verified ? t.map.verified : t.map.unverified}
             </Text>
           </View>
 
@@ -185,6 +177,18 @@ export default function ListScreen() {
   const { theme, isDark } = useTheme();
   const { spots, favorites, settings, toggleFavorite, isFavorite } = useWifi();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
+
+  const CATEGORY_FILTERS: { key: CategoryFilter; label: string; icon: string }[] = [
+    { key: "all",        label: t.categories.all,        icon: "grid-outline"       },
+    { key: "cafe",       label: t.categories.cafe,       icon: "cafe-outline"       },
+    { key: "restaurant", label: t.categories.restaurant, icon: "restaurant-outline" },
+    { key: "bar",        label: t.categories.bar,        icon: "wine-outline"       },
+    { key: "hotel",      label: t.categories.hotel,      icon: "bed-outline"        },
+    { key: "library",    label: t.categories.library,    icon: "library-outline"    },
+    { key: "gym",        label: t.categories.gym,        icon: "barbell-outline"    },
+    { key: "mall",       label: t.categories.mall,       icon: "bag-outline"        },
+  ];
 
   const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
@@ -252,7 +256,7 @@ export default function ListScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Поиск Wi-Fi точек..."
+            placeholder={t.list.searchPlaceholder}
             placeholderTextColor={theme.textTertiary}
             style={[styles.searchInput, { color: theme.text }]}
           />
@@ -265,7 +269,7 @@ export default function ListScreen() {
 
         <View style={styles.filterTabs}>
           {(["all", "favorites", "verified"] as FilterTab[]).map((tab) => {
-            const labels = { all: "Все", favorites: "Избранные", verified: "Проверенные" };
+            const labels = { all: t.list.all, favorites: t.list.favorites, verified: t.list.verified };
             const active = filterTab === tab;
             return (
               <Pressable
@@ -362,12 +366,10 @@ export default function ListScreen() {
           <View style={styles.empty}>
             <Ionicons name="wifi-outline" size={48} color={theme.textTertiary} />
             <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>
-              {search ? "Ничего не найдено" : "Нет Wi-Fi точек"}
+              {search ? t.list.noResults : t.list.noSpots}
             </Text>
             <Text style={[styles.emptyText, { color: theme.textTertiary }]}>
-              {search
-                ? "Попробуйте другой запрос"
-                : "Будьте первым, кто добавит точку!"}
+              {search ? t.list.noResultsSub : t.list.noSpotsSub}
             </Text>
           </View>
         }

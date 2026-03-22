@@ -7,21 +7,23 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import Colors from "@/constants/colors";
 import { useWifi } from "@/context/WifiContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function NativeTabLayout() {
+  const t = useTranslation();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "map", selected: "map.fill" }} />
-        <Label>Карта</Label>
+        <Label>{t.tabs.map}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="list">
         <Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
-        <Label>Список</Label>
+        <Label>{t.tabs.list}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>Настройки</Label>
+        <Label>{t.tabs.settings}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -30,6 +32,7 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const colorScheme = useColorScheme();
   const { settings } = useWifi();
+  const t = useTranslation();
 
   const effectiveTheme = settings.theme === "system" ? colorScheme : settings.theme;
   const isDark = effectiveTheme === "dark" || effectiveTheme === "oled";
@@ -66,7 +69,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Карта",
+          title: t.tabs.map,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map" size={size} color={color} />
           ),
@@ -75,7 +78,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="list"
         options={{
-          title: "Список",
+          title: t.tabs.list,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list" size={size} color={color} />
           ),
@@ -84,7 +87,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Настройки",
+          title: t.tabs.settings,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

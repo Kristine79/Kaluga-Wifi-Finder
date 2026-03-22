@@ -17,16 +17,7 @@ import { useWifi } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
 import { getApiUrl } from "@/lib/query-client";
 import type { WifiCategory } from "@/context/WifiContext";
-
-const CATEGORIES: { key: WifiCategory | "all"; label: string; icon: string }[] = [
-  { key: "all",        label: "Все",   icon: "grid-outline"       },
-  { key: "cafe",       label: "Кафе",  icon: "cafe-outline"       },
-  { key: "restaurant", label: "Еда",   icon: "restaurant-outline" },
-  { key: "bar",        label: "Бары",  icon: "wine-outline"       },
-  { key: "hotel",      label: "Отели", icon: "bed-outline"        },
-  { key: "library",    label: "Библ.", icon: "library-outline"    },
-  { key: "mall",       label: "ТЦ",   icon: "bag-outline"        },
-];
+import { useTranslation } from "@/hooks/useTranslation";
 
 function buildMapHtml(apiKey: string, spotsJson: string): string {
   return `<!DOCTYPE html>
@@ -142,7 +133,18 @@ function buildMapHtml(apiKey: string, spotsJson: string): string {
 export default function WifiMap() {
   const { spots, settings } = useWifi();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
   const webViewRef = useRef<WebView>(null);
+
+  const CATEGORIES: { key: WifiCategory | "all"; label: string; icon: string }[] = [
+    { key: "all",        label: t.categoryShort.all,        icon: "grid-outline"       },
+    { key: "cafe",       label: t.categoryShort.cafe,       icon: "cafe-outline"       },
+    { key: "restaurant", label: t.categoryShort.restaurant, icon: "restaurant-outline" },
+    { key: "bar",        label: t.categoryShort.bar,        icon: "wine-outline"       },
+    { key: "hotel",      label: t.categoryShort.hotel,      icon: "bed-outline"        },
+    { key: "library",    label: t.categoryShort.library,    icon: "library-outline"    },
+    { key: "mall",       label: t.categoryShort.mall,       icon: "bag-outline"        },
+  ];
 
   const [locationPermission, requestPermission] = Location.useForegroundPermissions();
   const [selectedCategory, setSelectedCategory] = useState<WifiCategory | "all">("all");
@@ -233,7 +235,7 @@ export default function WifiMap() {
       ) : (
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loaderText}>Загрузка карты...</Text>
+          <Text style={styles.loaderText}>{t.map.loadingMap}</Text>
         </View>
       )}
 
@@ -244,7 +246,7 @@ export default function WifiMap() {
           style={({ pressed }) => [styles.searchBar, { opacity: pressed ? 0.92 : 1 }]}
         >
           <Ionicons name="search" size={16} color="#9CA3AF" />
-          <Text style={styles.searchPlaceholder}>Поиск Wi-Fi точек...</Text>
+          <Text style={styles.searchPlaceholder}>{t.map.searchPlaceholder}</Text>
           <Ionicons name="arrow-forward-circle" size={22} color={Colors.primary} />
         </Pressable>
 

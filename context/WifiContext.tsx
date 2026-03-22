@@ -32,6 +32,7 @@ export interface AppSettings {
   autoOpenWifiInfo: boolean;
   hapticFeedback: boolean;
   categoryFilter: boolean;
+  language: "ru" | "en";
 }
 
 export interface UserStats {
@@ -592,6 +593,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoOpenWifiInfo: true,
   hapticFeedback: true,
   categoryFilter: true,
+  language: "ru",
 };
 
 const DEFAULT_STATS: UserStats = {

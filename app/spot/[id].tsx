@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 import { useWifi, WifiSpot } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const CATEGORY_ICONS: Record<string, string> = {
   cafe: "cafe",
@@ -26,24 +27,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   gym: "barbell",
   mall: "bag",
   other: "wifi",
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  cafe: "Кафе",
-  restaurant: "Ресторан",
-  bar: "Бар",
-  hotel: "Отель",
-  library: "Библиотека",
-  gym: "Спортзал",
-  mall: "Торговый центр",
-  other: "Другое",
-};
-
-const SPEED_LABELS: Record<string, string> = {
-  slow: "Медленный",
-  moderate: "Средний",
-  fast: "Быстрый",
-  ultra_fast: "Ультра быстрый",
 };
 
 const SPEED_COLORS: Record<string, string> = {
@@ -58,6 +41,7 @@ export default function SpotDetailScreen() {
   const { theme, isDark } = useTheme();
   const { getSpotById, voteSpot, toggleFavorite, reportSpot, isFavorite, settings } = useWifi();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
 
   const [showPassword, setShowPassword] = useState(false);
   const [copiedSsid, setCopiedSsid] = useState(false);
@@ -71,11 +55,11 @@ export default function SpotDetailScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="wifi-outline" size={48} color={theme.textTertiary} />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            Точка не найдена
+            {t.spot.notFound}
           </Text>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Text style={{ color: Colors.primary, fontFamily: "Inter_600SemiBold" }}>
-              Назад
+              {t.spot.back}
             </Text>
           </Pressable>
         </View>
@@ -118,12 +102,12 @@ export default function SpotDetailScreen() {
 
   const handleReport = () => {
     Alert.alert(
-      "Отметить как устаревшее",
-      "Вы хотите сообщить, что информация об этой точке устарела?",
+      t.spot.reportTitle,
+      t.spot.reportMsg,
       [
-        { text: "Отмена", style: "cancel" },
+        { text: t.spot.cancel, style: "cancel" },
         {
-          text: "Да, сообщить",
+          text: t.spot.reportConfirm,
           style: "destructive",
           onPress: () => {
             if (settings.hapticFeedback) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -148,7 +132,7 @@ export default function SpotDetailScreen() {
             {spot.name}
           </Text>
           <Text style={[styles.spotCategory, { color: catColor }]}>
-            {CATEGORY_LABELS[spot.category] || "Другое"}
+            {t.categories[spot.category as keyof typeof t.categories] || t.categories.other}
           </Text>
         </View>
         <Pressable
@@ -184,24 +168,24 @@ export default function SpotDetailScreen() {
           <View style={[styles.badge, { backgroundColor: statusColor + "22" }]}>
             <View style={[styles.badgeDot, { backgroundColor: statusColor }]} />
             <Text style={[styles.badgeText, { color: statusColor }]}>
-              {spot.isOutdated ? "Устарело" : spot.verified ? "Проверено" : "Не проверено"}
+              {spot.isOutdated ? t.map.outdated : spot.verified ? t.map.verified : t.map.unverified}
             </Text>
           </View>
           <View style={[styles.badge, { backgroundColor: speedColor + "22" }]}>
             <Ionicons name="flash-outline" size={13} color={speedColor} />
             <Text style={[styles.badgeText, { color: speedColor }]}>
-              {SPEED_LABELS[spot.speed]}
+              {t.speed[spot.speed as keyof typeof t.speed] ?? spot.speed}
             </Text>
           </View>
         </View>
 
         <View style={[styles.wifiCard, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }]}>
-          <Text style={[styles.wifiCardTitle, { color: theme.textTertiary }]}>ПОДКЛЮЧЕНИЕ</Text>
+          <Text style={[styles.wifiCardTitle, { color: theme.textTertiary }]}>{t.spot.connection}</Text>
 
           <View style={[styles.wifiRow, { borderBottomColor: theme.border }]}>
             <Ionicons name="wifi" size={18} color={Colors.primary} />
             <View style={styles.wifiRowContent}>
-              <Text style={[styles.wifiLabel, { color: theme.textTertiary }]}>Сеть</Text>
+              <Text style={[styles.wifiLabel, { color: theme.textTertiary }]}>{t.spot.network}</Text>
               <Text style={[styles.wifiValue, { color: theme.text }]}>{spot.ssid}</Text>
             </View>
             <Pressable
@@ -223,14 +207,14 @@ export default function SpotDetailScreen() {
               color={spot.password ? theme.textTertiary : Colors.verified}
             />
             <View style={styles.wifiRowContent}>
-              <Text style={[styles.wifiLabel, { color: theme.textTertiary }]}>Пароль</Text>
+              <Text style={[styles.wifiLabel, { color: theme.textTertiary }]}>{t.spot.password}</Text>
               {spot.password ? (
                 <Text style={[styles.wifiValue, { color: theme.text }]}>
                   {showPassword ? spot.password : "••••••••"}
                 </Text>
               ) : (
                 <Text style={[styles.wifiValue, { color: Colors.verified }]}>
-                  Открытая сеть
+                  {t.spot.noPassword}
                 </Text>
               )}
             </View>
@@ -269,7 +253,7 @@ export default function SpotDetailScreen() {
 
         <View style={[styles.votingCard, { borderColor: theme.border }]}>
           <Text style={[styles.votingTitle, { color: theme.textTertiary }]}>
-            Это работает?
+            {t.spot.votes}
           </Text>
           <View style={styles.votingRow}>
             <Pressable
@@ -296,7 +280,7 @@ export default function SpotDetailScreen() {
                   { color: spot.userVote === "up" ? Colors.verified : theme.text },
                 ]}
               >
-                {spot.upvotes} Работает
+                {spot.upvotes} {t.spot.upvote}
               </Text>
             </Pressable>
 
@@ -324,7 +308,7 @@ export default function SpotDetailScreen() {
                   { color: spot.userVote === "down" ? Colors.slow : theme.text },
                 ]}
               >
-                {spot.downvotes} Не работает
+                {spot.downvotes} {t.spot.downvote}
               </Text>
             </Pressable>
           </View>
@@ -333,8 +317,8 @@ export default function SpotDetailScreen() {
         <View style={styles.dateRow}>
           <Ionicons name="time-outline" size={14} color={theme.textTertiary} />
           <Text style={[styles.dateText, { color: theme.textTertiary }]}>
-            Добавлено{" "}
-            {new Date(spot.createdAt).toLocaleDateString("ru-RU", {
+            {t.spot.addedBy}{" "}
+            {new Date(spot.createdAt).toLocaleDateString(settings.language === "en" ? "en-GB" : "ru-RU", {
               day: "numeric",
               month: "long",
               year: "numeric",
@@ -355,7 +339,7 @@ export default function SpotDetailScreen() {
         >
           <Ionicons name="flag-outline" size={16} color={Colors.outdated} />
           <Text style={[styles.reportBtnText, { color: Colors.outdated }]}>
-            Сообщить об устаревших данных
+            {t.spot.reportTitle}
           </Text>
         </Pressable>
       </ScrollView>

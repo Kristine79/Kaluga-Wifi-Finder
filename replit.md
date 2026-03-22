@@ -13,14 +13,15 @@
 
 ## Key Features
 
-- Interactive Leaflet map with colored markers (verified/unverified/outdated)
+- Interactive Yandex Maps with colored markers (verified/unverified/outdated)
 - Searchable list with category and status filters
 - Add new Wi-Fi spots with SSID, password, category, speed
 - Vote (upvote/downvote) on spot accuracy
 - Favorites system, report outdated info
-- Settings: theme (system/light/dark/OLED), distance units
+- Settings: theme (system/light/dark/OLED), distance units, language (RU/EN)
+- Full Russian/English localization (lib/i18n.ts + hooks/useTranslation.ts)
 - Contribution stats tracking
-- 15 pre-seeded Kaluga locations
+- 15 pre-seeded Kaluga locations from OSM
 - PWA: installable, offline support via service worker
 - Telegram bot with commands: /поиск, /список, /кафе, /рестораны, /библиотеки, /тц, /отели, /спорт, /проверенные
 
@@ -37,13 +38,16 @@ app/
   add.tsx                — Add Wi-Fi spot (formSheet)
   spot/[id].tsx          — Spot detail (formSheet) copy/vote/report
 components/
-  WifiMap.tsx            — Web Leaflet map (PWA)
-  WifiMap.native.tsx     — Native map (react-native-maps, iOS/Android)
+  WifiMap.tsx            — Web Yandex Maps (PWA)
+  WifiMap.native.tsx     — Native map via WebView (Yandex Maps, iOS/Android)
   ErrorBoundary.tsx      — Error boundary
 context/
   WifiContext.tsx        — App state (spots, favorites, settings, stats)
 hooks/
   useTheme.ts            — Theme hook + haversine distance utilities
+  useTranslation.ts      — i18n hook (reads settings.language from WifiContext)
+lib/
+  i18n.ts                — All RU/EN translations (tabs, map, list, add, spot, settings)
 constants/
   colors.ts              — Color palette
 server/

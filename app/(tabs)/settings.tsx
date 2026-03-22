@@ -14,15 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 import { useWifi } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type ThemeOption = "system" | "light" | "dark" | "oled";
-
-const THEME_OPTIONS: { key: ThemeOption; label: string; icon: string }[] = [
-  { key: "system", label: "Системная", icon: "phone-portrait-outline" },
-  { key: "light", label: "Светлая", icon: "sunny-outline" },
-  { key: "dark", label: "Тёмная", icon: "moon-outline" },
-  { key: "oled", label: "OLED", icon: "contrast-outline" },
-];
 
 function SettingRow({
   label,
@@ -67,9 +61,17 @@ export default function SettingsScreen() {
   const { theme, isDark } = useTheme();
   const { settings, stats, updateSettings } = useWifi();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
 
   const topInset = insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : 0;
+
+  const THEME_OPTIONS: { key: ThemeOption; label: string; icon: string }[] = [
+    { key: "system", label: t.settings.themeSystem, icon: "phone-portrait-outline" },
+    { key: "light",  label: t.settings.themeLight,  icon: "sunny-outline" },
+    { key: "dark",   label: t.settings.themeDark,   icon: "moon-outline" },
+    { key: "oled",   label: "OLED",                 icon: "contrast-outline" },
+  ];
 
   const toggle = (key: keyof typeof settings) => {
     if (settings.hapticFeedback) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -83,16 +85,16 @@ export default function SettingsScreen() {
   };
 
   const statItems = [
-    { label: "Точек добавлено", value: stats.spotsAdded, icon: "wifi", color: Colors.primary },
-    { label: "Голосов отдано", value: stats.votesCast, icon: "thumbs-up", color: Colors.verified },
-    { label: "Репортов", value: stats.reportsFiled, icon: "flag", color: Colors.outdated },
-    { label: "Тестов скорости", value: stats.speedTests, icon: "speedometer", color: Colors.fast },
+    { label: t.settings.statSpotsAdded,  value: stats.spotsAdded,   icon: "wifi",        color: Colors.primary  },
+    { label: t.settings.statVotes,        value: stats.votesCast,    icon: "thumbs-up",   color: Colors.verified },
+    { label: t.settings.statReports,      value: stats.reportsFiled, icon: "flag",        color: Colors.outdated },
+    { label: t.settings.statSpeedTests,   value: stats.speedTests,   icon: "speedometer", color: Colors.fast     },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { paddingTop: topInset + 8, backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.text }]}>Настройки</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t.settings.title}</Text>
         <View style={[styles.logoContainer, { backgroundColor: Colors.primary + "20" }]}>
           <Ionicons name="wifi" size={24} color={Colors.primary} />
         </View>
@@ -103,7 +105,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingBottom: 100 + bottomInset }}
       >
         <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <SectionHeader title="ВНЕШНИЙ ВИД" theme={theme} />
+          <SectionHeader title={t.settings.appearance} theme={theme} />
           <View style={styles.themeRow}>
             {THEME_OPTIONS.map((opt) => {
               const active = settings.theme === opt.key;
@@ -138,11 +140,11 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <SectionHeader title="КАРТА" theme={theme} />
+          <SectionHeader title={t.settings.map} theme={theme} />
 
           <SettingRow
-            label="Только проверенные"
-            subtitle="Показывать точки с 5+ голосами"
+            label={t.settings.verifiedOnly}
+            subtitle={t.settings.verifiedOnlySub}
             icon="shield-checkmark-outline"
             iconColor={Colors.verified}
             theme={theme}
@@ -158,8 +160,8 @@ export default function SettingsScreen() {
           />
 
           <SettingRow
-            label="Единицы расстояния"
-            subtitle="Километры или мили"
+            label={t.settings.distanceUnits}
+            subtitle={t.settings.distanceUnitsSub}
             icon="swap-horizontal-outline"
             iconColor={Colors.primary}
             theme={theme}
@@ -192,8 +194,8 @@ export default function SettingsScreen() {
           />
 
           <SettingRow
-            label="Авто-открытие Wi-Fi"
-            subtitle="Показывать детали при переходе с карты"
+            label={t.settings.autoOpen}
+            subtitle={t.settings.autoOpenSub}
             icon="map-outline"
             iconColor="#8B5CF6"
             theme={theme}
@@ -210,11 +212,11 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <SectionHeader title="ОБЩИЕ" theme={theme} />
+          <SectionHeader title={t.settings.general} theme={theme} />
 
           <SettingRow
-            label="Тактильный отклик"
-            subtitle="Вибрация при нажатиях"
+            label={t.settings.haptic}
+            subtitle={t.settings.hapticSub}
             icon="notifications-outline"
             iconColor="#F59E0B"
             theme={theme}
@@ -230,8 +232,8 @@ export default function SettingsScreen() {
           />
 
           <SettingRow
-            label="Фильтр категорий"
-            subtitle="Показывать чипы на карте и в списке"
+            label={t.settings.categoryFilter}
+            subtitle={t.settings.categoryFilterSub}
             icon="options-outline"
             iconColor="#EC4899"
             theme={theme}
@@ -248,8 +250,41 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <SectionHeader title={t.settings.language} theme={theme} />
+          <View style={styles.themeRow}>
+            {(["ru", "en"] as const).map((lang) => {
+              const active = (settings.language ?? "ru") === lang;
+              const label = lang === "ru" ? t.settings.langRu : t.settings.langEn;
+              const icon = lang === "ru" ? "🇷🇺" : "🇬🇧";
+              return (
+                <Pressable
+                  key={lang}
+                  onPress={() => {
+                    if (settings.hapticFeedback) Haptics.selectionAsync();
+                    updateSettings({ language: lang });
+                  }}
+                  style={({ pressed }) => [
+                    styles.themeBtn,
+                    {
+                      backgroundColor: active ? Colors.primary : theme.surfaceSecondary,
+                      borderColor: active ? Colors.primary : theme.border,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={{ fontSize: 22 }}>{icon}</Text>
+                  <Text style={[styles.themeBtnLabel, { color: active ? "#fff" : theme.textSecondary }]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.statsHeader}>
-            <SectionHeader title="МОИ ВКЛАДЫ" theme={theme} />
+            <SectionHeader title={t.settings.myContributions} theme={theme} />
           </View>
           <View style={styles.statsGrid}>
             {statItems.map((item) => (
@@ -269,13 +304,12 @@ export default function SettingsScreen() {
 
         <View style={[styles.aboutSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="wifi" size={28} color={Colors.primary} />
-          <Text style={[styles.aboutTitle, { color: theme.text }]}>Wi-Fi Калуга</Text>
+          <Text style={[styles.aboutTitle, { color: theme.text }]}>{t.settings.aboutTitle}</Text>
           <Text style={[styles.aboutText, { color: theme.textSecondary }]}>
-            Краудсорсинговое приложение для поиска Wi-Fi точек в Калуге.
-            Никаких данных не собирается. Делитесь паролями, помогайте сообществу.
+            {t.settings.aboutText}
           </Text>
           <Text style={[styles.versionText, { color: theme.textTertiary }]}>
-            Версия 1.0.0
+            {t.settings.version}
           </Text>
         </View>
       </ScrollView>

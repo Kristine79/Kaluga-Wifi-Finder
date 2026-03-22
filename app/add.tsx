@@ -16,29 +16,31 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 import { useWifi, WifiCategory, WifiSpeed } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
-
-const CATEGORIES: { key: WifiCategory; label: string; icon: string; color: string }[] = [
-  { key: "cafe", label: "Кафе", icon: "cafe-outline", color: Colors.category.cafe },
-  { key: "restaurant", label: "Ресторан", icon: "restaurant-outline", color: Colors.category.restaurant },
-  { key: "bar", label: "Бар", icon: "wine-outline", color: Colors.category.bar },
-  { key: "hotel", label: "Отель", icon: "bed-outline", color: Colors.category.hotel },
-  { key: "library", label: "Библиотека", icon: "library-outline", color: Colors.category.library },
-  { key: "gym", label: "Спортзал", icon: "barbell-outline", color: Colors.category.gym },
-  { key: "mall", label: "ТЦ", icon: "bag-outline", color: Colors.category.mall },
-  { key: "other", label: "Другое", icon: "ellipsis-horizontal-outline", color: Colors.category.other },
-];
-
-const SPEEDS: { key: WifiSpeed; label: string; sublabel: string; color: string }[] = [
-  { key: "slow", label: "Медленный", sublabel: "< 5 Мбит/с", color: Colors.slow },
-  { key: "moderate", label: "Средний", sublabel: "5-25 Мбит/с", color: Colors.moderate },
-  { key: "fast", label: "Быстрый", sublabel: "25-100 Мбит/с", color: Colors.fast },
-  { key: "ultra_fast", label: "Ультра", sublabel: "> 100 Мбит/с", color: Colors.ultraFast },
-];
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function AddSpotScreen() {
   const { theme, isDark } = useTheme();
   const { addSpot, settings } = useWifi();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
+
+  const CATEGORIES: { key: WifiCategory; label: string; icon: string; color: string }[] = [
+    { key: "cafe",       label: t.categories.cafe,        icon: "cafe-outline",                 color: Colors.category.cafe       },
+    { key: "restaurant", label: t.categories.restaurant,  icon: "restaurant-outline",           color: Colors.category.restaurant },
+    { key: "bar",        label: t.categories.bar,         icon: "wine-outline",                 color: Colors.category.bar        },
+    { key: "hotel",      label: t.categories.hotel,       icon: "bed-outline",                  color: Colors.category.hotel      },
+    { key: "library",    label: t.categories.library,     icon: "library-outline",              color: Colors.category.library    },
+    { key: "gym",        label: t.categories.gym,         icon: "barbell-outline",              color: Colors.category.gym        },
+    { key: "mall",       label: t.categories.mall,        icon: "bag-outline",                  color: Colors.category.mall       },
+    { key: "other",      label: t.categories.other,       icon: "ellipsis-horizontal-outline",  color: Colors.category.other      },
+  ];
+
+  const SPEEDS: { key: WifiSpeed; label: string; sublabel: string; color: string }[] = [
+    { key: "slow",       label: t.speed.slow,       sublabel: "< 5 Mbps",    color: Colors.slow      },
+    { key: "moderate",   label: t.speed.moderate,   sublabel: "5-25 Mbps",   color: Colors.moderate  },
+    { key: "fast",       label: t.speed.fast,       sublabel: "25-100 Mbps", color: Colors.fast      },
+    { key: "ultra_fast", label: t.speed.ultra_fast, sublabel: "> 100 Mbps",  color: Colors.ultraFast },
+  ];
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -52,11 +54,11 @@ export default function AddSpotScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Ошибка", "Введите название заведения");
+      Alert.alert(t.add.errorTitle, t.add.errorName);
       return;
     }
     if (!ssid.trim()) {
-      Alert.alert("Ошибка", "Введите название сети (SSID)");
+      Alert.alert(t.add.errorTitle, t.add.errorSsid);
       return;
     }
     if (settings.hapticFeedback) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -88,7 +90,7 @@ export default function AddSpotScreen() {
         >
           <Ionicons name="close" size={22} color={theme.textSecondary} />
         </Pressable>
-        <Text style={[styles.title, { color: theme.text }]}>Добавить Wi-Fi</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t.add.title}</Text>
         <Pressable
           onPress={handleSave}
           disabled={saving}
@@ -97,7 +99,7 @@ export default function AddSpotScreen() {
             { backgroundColor: Colors.primary, opacity: pressed || saving ? 0.7 : 1 },
           ]}
         >
-          <Text style={styles.saveBtnText}>{saving ? "..." : "Готово"}</Text>
+          <Text style={styles.saveBtnText}>{saving ? t.add.saving : t.add.done}</Text>
         </Pressable>
       </View>
 
@@ -107,14 +109,14 @@ export default function AddSpotScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.section, { borderColor: theme.border }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>ОСНОВНОЕ</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>{t.add.basic}</Text>
 
           <View style={[styles.inputRow, { borderBottomColor: theme.border }]}>
             <Ionicons name="storefront-outline" size={18} color={theme.textTertiary} />
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Название заведения"
+              placeholder={t.add.namePlaceholder}
               placeholderTextColor={theme.textTertiary}
               style={[styles.input, { color: theme.text }]}
             />
@@ -125,7 +127,7 @@ export default function AddSpotScreen() {
             <TextInput
               value={address}
               onChangeText={setAddress}
-              placeholder="Адрес (необязательно)"
+              placeholder={t.add.addressPlaceholder}
               placeholderTextColor={theme.textTertiary}
               style={[styles.input, { color: theme.text }]}
             />
@@ -133,14 +135,14 @@ export default function AddSpotScreen() {
         </View>
 
         <View style={[styles.section, { borderColor: theme.border }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>WI-FI</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>{t.add.wifiSection}</Text>
 
           <View style={[styles.inputRow, { borderBottomColor: theme.border }]}>
             <Ionicons name="wifi-outline" size={18} color={theme.textTertiary} />
             <TextInput
               value={ssid}
               onChangeText={setSsid}
-              placeholder="Название сети (SSID)"
+              placeholder={t.add.ssidPlaceholder}
               placeholderTextColor={theme.textTertiary}
               style={[styles.input, { color: theme.text }]}
               autoCapitalize="none"
@@ -168,7 +170,7 @@ export default function AddSpotScreen() {
             <Text
               style={[styles.input, { color: isOpen ? Colors.verified : theme.textSecondary }]}
             >
-              {isOpen ? "Открытая сеть (без пароля)" : "Есть пароль"}
+              {isOpen ? t.add.openNetwork : t.add.hasPassword}
             </Text>
             <Ionicons
               name={isOpen ? "checkmark-circle" : "ellipse-outline"}
@@ -183,7 +185,7 @@ export default function AddSpotScreen() {
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Пароль"
+                placeholder={t.add.passwordPlaceholder}
                 placeholderTextColor={theme.textTertiary}
                 style={[styles.input, { color: theme.text }]}
                 secureTextEntry={!showPassword}
@@ -204,7 +206,7 @@ export default function AddSpotScreen() {
         </View>
 
         <View style={[styles.section, { borderColor: theme.border }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>КАТЕГОРИЯ</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>{t.add.categorySection}</Text>
           <View style={styles.categoryGrid}>
             {CATEGORIES.map((cat) => {
               const active = category === cat.key;
@@ -235,7 +237,7 @@ export default function AddSpotScreen() {
         </View>
 
         <View style={[styles.section, { borderColor: theme.border }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>СКОРОСТЬ</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>{t.add.speedSection}</Text>
           <View style={styles.speedList}>
             {SPEEDS.map((s) => {
               const active = speed === s.key;

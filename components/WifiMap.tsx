@@ -11,6 +11,7 @@ import { useWifi } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
 import { getApiUrl } from "@/lib/query-client";
 import type { WifiCategory, WifiSpot } from "@/context/WifiContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const KALUGA: [number, number] = [54.5293, 36.2754];
@@ -35,14 +36,6 @@ const DIST_OPTIONS = [
   { label: "10км", value: 10  },
 ];
 
-const CATS: { key: WifiCategory | "all"; label: string; icon: any }[] = [
-  { key: "cafe",       label: "Кафе",    icon: "cafe-outline"       },
-  { key: "restaurant", label: "Еда",     icon: "restaurant-outline" },
-  { key: "bar",        label: "Бары",    icon: "wine-outline"       },
-  { key: "hotel",      label: "Отели",   icon: "bed-outline"        },
-  { key: "mall",       label: "ТЦ",      icon: "bag-outline"        },
-  { key: "library",    label: "Библ.",   icon: "library-outline"    },
-];
 
 // ─── Haversine ────────────────────────────────────────────────────────────────
 function kmDist(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -55,11 +48,12 @@ function kmDist(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 // ─── Spot card popup ──────────────────────────────────────────────────────────
 function SpotCard({ spot, onClose }: { spot: WifiSpot; onClose: () => void }) {
+  const t = useTranslation();
   const badge = spot.isOutdated
-    ? { txt: "Устарело",       bg: "#FEF3C7", fg: "#92400E" }
+    ? { txt: t.map.outdated,    bg: "#FEF3C7", fg: "#92400E" }
     : spot.verified || spot.upvotes >= 5
-      ? { txt: "Проверено",    bg: "#D1FAE5", fg: "#065F46" }
-      : { txt: "Не проверено", bg: "#DBEAFE", fg: "#1E40AF" };
+      ? { txt: t.map.verified,  bg: "#D1FAE5", fg: "#065F46" }
+      : { txt: t.map.unverified,bg: "#DBEAFE", fg: "#1E40AF" };
 
   return (
     <View style={cs.wrap} pointerEvents="box-none">
@@ -78,13 +72,13 @@ function SpotCard({ spot, onClose }: { spot: WifiSpot; onClose: () => void }) {
         <Text style={cs.addr} numberOfLines={1}>📍 {spot.address}</Text>
 
         <View style={cs.ssidBox}>
-          <Text style={cs.ssidLbl}>СЕТЬ</Text>
+          <Text style={cs.ssidLbl}>{t.map.network}</Text>
           <Text style={cs.ssid}>{spot.ssid}</Text>
         </View>
 
         {spot.password
           ? <View style={cs.passRow}><Text>🔑</Text><Text style={cs.pass}>{spot.password}</Text></View>
-          : <Text style={cs.open}>🔓 Открытая сеть</Text>
+          : <Text style={cs.open}>{t.map.openNetwork}</Text>
         }
 
         <View style={cs.ftr}>
@@ -93,7 +87,7 @@ function SpotCard({ spot, onClose }: { spot: WifiSpot; onClose: () => void }) {
             onPress={() => { onClose(); router.push(`/spot/${spot.id}` as any); }}
             style={({ pressed }) => [cs.btn, { opacity: pressed ? 0.8 : 1 }]}
           >
-            <Text style={cs.btnTxt}>Подробнее →</Text>
+            <Text style={cs.btnTxt}>{t.map.details}</Text>
           </Pressable>
         </View>
       </View>
@@ -137,7 +131,17 @@ export default function WifiMap() {
 
   const { spots, settings } = useWifi();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
   const topPad = insets.top;
+
+  const CATS: { key: WifiCategory | "all"; label: string; icon: any }[] = [
+    { key: "cafe",       label: t.categoryShort.cafe,       icon: "cafe-outline"       },
+    { key: "restaurant", label: t.categoryShort.restaurant, icon: "restaurant-outline" },
+    { key: "bar",        label: t.categoryShort.bar,        icon: "wine-outline"       },
+    { key: "hotel",      label: t.categoryShort.hotel,      icon: "bed-outline"        },
+    { key: "mall",       label: t.categoryShort.mall,       icon: "bag-outline"        },
+    { key: "library",    label: t.categoryShort.library,    icon: "library-outline"    },
+  ];
 
   const [ready, setReady]       = useState(false);
   const [selCat, setSelCat]     = useState<WifiCategory | "all">("all");
@@ -325,7 +329,7 @@ export default function WifiMap() {
           style={({ pressed }) => [s.searchBar, { opacity: pressed ? 0.92 : 1 }]}
         >
           <Ionicons name="search" size={17} color="#9CA3AF" />
-          <Text style={s.searchPh}>Поиск Wi-Fi точек...</Text>
+          <Text style={s.searchPh}>{t.map.searchPlaceholder}</Text>
         </Pressable>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
@@ -368,7 +372,7 @@ export default function WifiMap() {
             style={({ pressed }) => [s.counter, { opacity: pressed ? 0.8 : 1 }]}
           >
             <Ionicons name="wifi" size={14} color="#374151" />
-            <Text style={s.counterTxt}>{filtered.length} точек</Text>
+            <Text style={s.counterTxt}>{filtered.length} {t.map.spots}</Text>
             <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
           </Pressable>
         </View>
