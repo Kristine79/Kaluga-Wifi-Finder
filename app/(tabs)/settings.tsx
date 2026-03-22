@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useTheme } from "@/hooks/useTheme";
 import { useWifi } from "@/context/WifiContext";
 import Colors from "@/constants/colors";
@@ -300,6 +301,29 @@ export default function SettingsScreen() {
               </View>
             ))}
           </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <SectionHeader title={t.settings.about} theme={theme} />
+          <Pressable
+            onPress={() => router.push("/faq")}
+            style={({ pressed }) => [
+              styles.settingRow,
+              { borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 },
+            ]}
+            testID="faq-btn"
+          >
+            <View style={[styles.settingIcon, { backgroundColor: Colors.primary + "20" }]}>
+              <Ionicons name="help-circle-outline" size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.settingText}>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>{t.faq.title}</Text>
+              <Text style={[styles.settingSubtitle, { color: theme.textSecondary }]}>
+                {t.settings.faqSub}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+          </Pressable>
         </View>
 
         <View style={[styles.aboutSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>

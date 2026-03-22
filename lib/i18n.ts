@@ -109,6 +109,76 @@ const translations = {
       errorSsid: "Введите название сети (SSID)",
     },
 
+    faq: {
+      title: "Справка",
+      sections: [
+        {
+          title: "Основы",
+          items: [
+            {
+              q: "Что такое Wi-Fi Калуга?",
+              a: "Краудсорсинговое приложение для поиска Wi-Fi точек в Калуге. Все точки добавляются самими пользователями — кафе, рестораны, библиотеки, торговые центры и другие заведения.",
+            },
+            {
+              q: "Как найти ближайшую Wi-Fi точку?",
+              a: "Откройте вкладку «Карта» — все доступные точки отображаются на карте. Нажмите на маркер, чтобы увидеть название сети и пароль. В вкладке «Список» можно искать по названию, адресу или сети.",
+            },
+            {
+              q: "Как скопировать пароль?",
+              a: "Нажмите на точку на карте или в списке, чтобы открыть её детали. Затем нажмите кнопку «Скопировать» рядом с паролем — он будет добавлен в буфер обмена.",
+            },
+          ],
+        },
+        {
+          title: "Добавление точек",
+          items: [
+            {
+              q: "Как добавить новую Wi-Fi точку?",
+              a: "Нажмите кнопку «+» на карте или в списке. Заполните название заведения, адрес (необязательно), название сети (SSID) и пароль. Выберите категорию и примерную скорость — нажмите «Готово».",
+            },
+            {
+              q: "Что значит «Проверено»?",
+              a: "Точка считается проверенной, если набирает 5 или более голосов «Точная информация» от других пользователей. Проверенные точки отображаются зелёным маркером на карте.",
+            },
+            {
+              q: "Что значит «Устарело»?",
+              a: "Пользователи могут отметить точку как устаревшую, если сеть больше не работает или пароль изменился. Такие точки отображаются жёлтым маркером.",
+            },
+          ],
+        },
+        {
+          title: "Голосование",
+          items: [
+            {
+              q: "Как проголосовать за точку?",
+              a: "Откройте детали точки и нажмите кнопку «Точная информация» (палец вверх) если сеть работает и пароль верный, или «Неверная» (палец вниз) если информация устарела.",
+            },
+            {
+              q: "Как сообщить об устаревшей информации?",
+              a: "В деталях точки нажмите кнопку с флажком в правом верхнем углу. Подтвердите репорт — точка будет помечена как устаревшая.",
+            },
+          ],
+        },
+        {
+          title: "Настройки и приватность",
+          items: [
+            {
+              q: "Собираются ли мои данные?",
+              a: "Нет. Приложение не собирает никаких персональных данных. Добавленные Wi-Fi точки хранятся анонимно. Избранное и настройки хранятся только на вашем устройстве.",
+            },
+            {
+              q: "Как изменить язык интерфейса?",
+              a: "Перейдите в «Настройки» → раздел «Язык» и выберите 🇷🇺 Русский или 🇬🇧 English. Язык меняется мгновенно.",
+            },
+            {
+              q: "Как изменить тему оформления?",
+              a: "В разделе «Внешний вид» в настройках выберите один из вариантов: Системная (следует теме устройства), Светлая, Тёмная или OLED (чистый чёрный фон для AMOLED-экранов).",
+            },
+          ],
+        },
+      ],
+    },
+
     settings: {
       title: "Настройки",
       appearance: "ВНЕШНИЙ ВИД",
@@ -136,6 +206,8 @@ const translations = {
 
       langRu: "Русский",
       langEn: "English",
+
+      faqSub: "Вопросы и ответы о приложении",
 
       statSpotsAdded: "Точек добавлено",
       statVotes: "Голосов отдано",
@@ -256,6 +328,76 @@ const translations = {
       errorSsid: "Enter the network name (SSID)",
     },
 
+    faq: {
+      title: "Help",
+      sections: [
+        {
+          title: "Basics",
+          items: [
+            {
+              q: "What is Wi-Fi Kaluga?",
+              a: "A crowdsourced app for finding Wi-Fi spots in Kaluga. All spots are added by users — cafes, restaurants, libraries, shopping centres and other venues.",
+            },
+            {
+              q: "How do I find a nearby Wi-Fi spot?",
+              a: "Open the Map tab — all available spots are shown on the map. Tap a marker to see the network name and password. In the List tab you can search by name, address or network.",
+            },
+            {
+              q: "How do I copy a password?",
+              a: "Tap a spot on the map or in the list to open its details. Then press the Copy button next to the password — it will be added to your clipboard.",
+            },
+          ],
+        },
+        {
+          title: "Adding spots",
+          items: [
+            {
+              q: "How do I add a new Wi-Fi spot?",
+              a: "Press the «+» button on the map or in the list. Fill in the place name, address (optional), network name (SSID) and password. Choose a category and approximate speed, then press Done.",
+            },
+            {
+              q: "What does «Verified» mean?",
+              a: "A spot is considered verified when it receives 5 or more «Accurate info» votes from other users. Verified spots appear with a green marker on the map.",
+            },
+            {
+              q: "What does «Outdated» mean?",
+              a: "Users can mark a spot as outdated if the network no longer works or the password has changed. Outdated spots appear with a yellow marker.",
+            },
+          ],
+        },
+        {
+          title: "Voting",
+          items: [
+            {
+              q: "How do I vote for a spot?",
+              a: "Open the spot details and press «Accurate info» (thumbs up) if the network works and the password is correct, or «Incorrect» (thumbs down) if the information is wrong.",
+            },
+            {
+              q: "How do I report outdated information?",
+              a: "In the spot details press the flag button in the top right corner. Confirm the report — the spot will be marked as outdated.",
+            },
+          ],
+        },
+        {
+          title: "Settings & privacy",
+          items: [
+            {
+              q: "Is my data collected?",
+              a: "No. The app does not collect any personal data. Added Wi-Fi spots are stored anonymously. Favourites and settings are stored only on your device.",
+            },
+            {
+              q: "How do I change the interface language?",
+              a: "Go to Settings → Language section and choose 🇷🇺 Русский or 🇬🇧 English. The language changes instantly.",
+            },
+            {
+              q: "How do I change the theme?",
+              a: "In the Appearance section in Settings choose one of: System (follows device theme), Light, Dark or OLED (pure black background for AMOLED screens).",
+            },
+          ],
+        },
+      ],
+    },
+
     settings: {
       title: "Settings",
       appearance: "APPEARANCE",
@@ -283,6 +425,8 @@ const translations = {
 
       langRu: "Русский",
       langEn: "English",
+
+      faqSub: "Questions and answers about the app",
 
       statSpotsAdded: "Spots added",
       statVotes: "Votes cast",
