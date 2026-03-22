@@ -8,11 +8,11 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AppPreloader } from "@/components/AppPreloader";
 import { queryClient } from "@/lib/query-client";
 import { WifiProvider } from "@/context/WifiContext";
 
@@ -56,6 +56,8 @@ function RootLayoutNav() {
   );
 }
 
+const PRELOADER_MIN_MS = 2800;
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -63,17 +65,21 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-      if (Platform.OS === "web") {
-        (window as any).hideWebPreloader?.();
-      }
-    }
-  }, [fontsLoaded, fontError]);
+    const t = setTimeout(() => setMinTimeElapsed(true), PRELOADER_MIN_MS);
+    return () => clearTimeout(t);
+  }, []);
 
-  if (!fontsLoaded && !fontError) return null;
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && minTimeElapsed) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError, minTimeElapsed]);
+
+  if (!fontsLoaded && !fontError) return <AppPreloader />;
+  if (!minTimeElapsed) return <AppPreloader />;
 
   return (
     <ErrorBoundary>
