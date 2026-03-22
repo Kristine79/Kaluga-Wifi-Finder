@@ -139,13 +139,12 @@ export default function WifiMap() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const [ready, setReady]                   = useState(false);
-  const [selCat, setSelCat]                 = useState<WifiCategory | "all">("all");
-  const [selDist, setSelDist]               = useState<number | null>(null);
-  const [userLoc, setUserLoc]               = useState<[number, number] | null>(null);
-  const [center, setCenter]                 = useState<[number, number]>(KALUGA);
-  const [showSearchArea, setShowSearchArea] = useState(false);
-  const [activeSpot, setActiveSpot]         = useState<WifiSpot | null>(null);
+  const [ready, setReady]       = useState(false);
+  const [selCat, setSelCat]     = useState<WifiCategory | "all">("all");
+  const [selDist, setSelDist]   = useState<number | null>(null);
+  const [userLoc, setUserLoc]   = useState<[number, number] | null>(null);
+  const [center, setCenter]     = useState<[number, number]>(KALUGA);
+  const [activeSpot, setActiveSpot] = useState<WifiSpot | null>(null);
 
   // ─── Filtered spots ──────────────────────────────────────────────────────────
   const filtered = useMemo(() => spots.filter((s) => {
@@ -206,12 +205,6 @@ export default function WifiMap() {
     mapRef.current = map;
 
     map.events.add("click", () => setActiveSpot(null));
-
-    let bounceTimer: any;
-    map.events.add("boundschange", () => {
-      clearTimeout(bounceTimer);
-      bounceTimer = setTimeout(() => setShowSearchArea(true), 800);
-    });
 
     setReady(true);
   }
@@ -311,13 +304,6 @@ export default function WifiMap() {
     });
   }, []);
 
-  const handleSearchArea = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const c = map.getCenter(); // [lat, lng] in ymaps
-    setCenter([c[0], c[1]]);
-    setShowSearchArea(false);
-  }, []);
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -329,7 +315,7 @@ export default function WifiMap() {
       </View>
 
       {/* ── Top UI ── */}
-      <View style={[s.top, { paddingTop: topPad + 8 }]} pointerEvents="box-none">
+      <View style={[s.top, { paddingTop: topPad + 4 }]} pointerEvents="box-none">
         <Pressable
           onPress={() => router.push("/(tabs)/list")}
           style={({ pressed }) => [s.searchBar, { opacity: pressed ? 0.92 : 1 }]}
@@ -372,7 +358,7 @@ export default function WifiMap() {
 
       {/* ── Spot counter ── */}
       {!activeSpot && (
-        <View style={[s.counterWrap, { top: topPad + 8 + 136 }]}>
+        <View style={[s.counterWrap, { top: topPad + 4 + 136 }]}>
           <Pressable
             onPress={() => router.push("/(tabs)/list")}
             style={({ pressed }) => [s.counter, { opacity: pressed ? 0.8 : 1 }]}
@@ -384,27 +370,11 @@ export default function WifiMap() {
         </View>
       )}
 
-      {/* ── Search this area ── */}
-      {showSearchArea && !activeSpot && (
-        <View style={s.searchAreaWrap} pointerEvents="box-none">
-          <Pressable
-            onPress={handleSearchArea}
-            style={({ pressed }) => [s.searchAreaBtn, { opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Ionicons name="refresh" size={14} color={Colors.primary} />
-            <Text style={s.searchAreaTxt}>Искать в этом районе</Text>
-          </Pressable>
-        </View>
-      )}
-
       {/* ── Spot card popup ── */}
       {activeSpot && <SpotCard spot={activeSpot} onClose={() => setActiveSpot(null)} />}
 
       {/* ── Bottom-right buttons ── */}
       <View style={s.fab2}>
-        <Pressable onPress={handleSearchArea} style={({ pressed }) => [s.iconBtn, { opacity: pressed ? 0.8 : 1, marginBottom: 10 }]}>
-          <Ionicons name="refresh" size={20} color={Colors.primary} />
-        </Pressable>
         <Pressable onPress={handleLocate} style={({ pressed }) => [s.iconBtn, { opacity: pressed ? 0.8 : 1 }]}>
           <Ionicons name="locate-outline" size={20} color={Colors.primary} />
         </Pressable>
@@ -467,19 +437,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
   counterTxt: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
-
-  searchAreaWrap: {
-    position: "absolute", top: "40%", left: 0, right: 0,
-    alignItems: "center", zIndex: 900,
-  },
-  searchAreaBtn: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "#fff", paddingHorizontal: 18, paddingVertical: 10,
-    borderRadius: 24,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.14, shadowRadius: 8, elevation: 5,
-  },
-  searchAreaTxt: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.primary },
 
   fab2: { position: "absolute", right: 14, bottom: 110, zIndex: 1000 },
   iconBtn: {
