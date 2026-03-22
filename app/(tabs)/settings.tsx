@@ -68,7 +68,7 @@ export default function SettingsScreen() {
   const { settings, stats, updateSettings } = useWifi();
   const insets = useSafeAreaInsets();
 
-  const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const topInset = insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : 0;
 
   const toggle = (key: keyof typeof settings) => {

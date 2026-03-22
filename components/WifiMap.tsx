@@ -137,7 +137,7 @@ export default function WifiMap() {
 
   const { spots, settings } = useWifi();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = insets.top;
 
   const [ready, setReady]       = useState(false);
   const [selCat, setSelCat]     = useState<WifiCategory | "all">("all");

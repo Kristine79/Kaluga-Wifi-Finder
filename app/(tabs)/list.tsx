@@ -191,7 +191,7 @@ export default function ListScreen() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [refreshing, setRefreshing] = useState(false);
 
-  const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const topInset = insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : 0;
 
   const filtered = useMemo(() => {
