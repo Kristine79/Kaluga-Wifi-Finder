@@ -248,39 +248,38 @@ export default function SettingsScreen() {
               />
             }
           />
-        </View>
 
-        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <SectionHeader title={t.settings.language} theme={theme} />
-          <View style={styles.themeRow}>
-            {(["ru", "en"] as const).map((lang) => {
-              const active = (settings.language ?? "ru") === lang;
-              const label = lang === "ru" ? t.settings.langRu : t.settings.langEn;
-              const icon = lang === "ru" ? "🇷🇺" : "🇬🇧";
-              return (
-                <Pressable
-                  key={lang}
-                  onPress={() => {
-                    if (settings.hapticFeedback) Haptics.selectionAsync();
-                    updateSettings({ language: lang });
-                  }}
-                  style={({ pressed }) => [
-                    styles.themeBtn,
-                    {
-                      backgroundColor: active ? Colors.primary : theme.surfaceSecondary,
-                      borderColor: active ? Colors.primary : theme.border,
-                      opacity: pressed ? 0.8 : 1,
-                    },
-                  ]}
-                >
-                  <Text style={{ fontSize: 22 }}>{icon}</Text>
-                  <Text style={[styles.themeBtnLabel, { color: active ? "#fff" : theme.textSecondary }]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <SettingRow
+            label={t.settings.language}
+            icon="language-outline"
+            iconColor="#0EA5E9"
+            theme={theme}
+            right={
+              <View style={styles.unitToggle}>
+                {(["ru", "en"] as const).map((lang) => {
+                  const active = (settings.language ?? "ru") === lang;
+                  const flag = lang === "ru" ? "🇷🇺" : "🇬🇧";
+                  return (
+                    <Pressable
+                      key={lang}
+                      onPress={() => {
+                        if (settings.hapticFeedback) Haptics.selectionAsync();
+                        updateSettings({ language: lang });
+                      }}
+                      style={[
+                        styles.unitBtn,
+                        { backgroundColor: active ? Colors.primary : theme.surfaceSecondary },
+                      ]}
+                    >
+                      <Text style={[styles.unitBtnText, { color: active ? "#fff" : theme.textSecondary }]}>
+                        {flag} {lang.toUpperCase()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            }
+          />
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
